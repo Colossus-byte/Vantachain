@@ -1,0 +1,154 @@
+
+import React, { useState } from 'react';
+import { UserProgress, Guild } from '../types';
+import { DEFAULT_AVATARS, GUILD_DATA } from '../constants';
+import VantaPass from './VantaPass';
+
+interface ProfileViewProps {
+  progress: UserProgress;
+  onUpdate: (updates: Partial<UserProgress>) => void;
+}
+
+const ProfileView: React.FC<ProfileViewProps> = ({ progress, onUpdate }) => {
+  const [username, setUsername] = useState(progress.username);
+  const [bio, setBio] = useState(progress.bio);
+  const [selectedAvatar, setSelectedAvatar] = useState(progress.avatarUrl);
+  const [isEditing, setIsEditing] = useState(false);
+
+  const handleSave = () => {
+    onUpdate({ username, bio, avatarUrl: selectedAvatar });
+    setIsEditing(false);
+  };
+
+  const guild = GUILD_DATA[progress.guild];
+
+  return (
+    <div className="page-transition max-w-5xl mx-auto py-6 md:py-8">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 md:gap-12">
+        {/* Identity Card Area */}
+        <div className="lg:col-span-5 space-y-6 md:space-y-8 flex flex-col items-center lg:items-start">
+          <h3 className="terminal-text text-[8px] md:text-[10px] uppercase tracking-[0.4em] mb-2 md:mb-4">Neural Signature</h3>
+          <VantaPass progress={progress} />
+          
+          {progress.isPro ? (
+            <div className="p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem] bg-indigo-500/10 border border-indigo-500/20 w-full flex items-center gap-4 md:gap-6 group">
+              <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-indigo-500 flex items-center justify-center text-white shadow-lg shadow-indigo-500/20 group-hover:scale-110 transition-transform">
+                <i className="fa-solid fa-briefcase text-xl md:text-2xl"></i>
+              </div>
+              <div>
+                <p className="text-[8px] md:text-[10px] font-black text-indigo-400 uppercase tracking-[0.4em] mb-1">Status: Institutional</p>
+                <h4 className="text-lg md:text-xl font-black text-white tracking-tighter uppercase italic">Vanta Pro Node</h4>
+              </div>
+            </div>
+          ) : (
+            <div className="p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem] bg-white/[0.02] border border-white/5 w-full flex flex-col items-center text-center space-y-4 md:space-y-6">
+              <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-white/5 flex items-center justify-center text-slate-500 border border-white/10">
+                <i className="fa-solid fa-lock text-xl md:text-2xl"></i>
+              </div>
+              <div>
+                <p className="text-[8px] md:text-[10px] font-black text-slate-500 uppercase tracking-[0.4em] mb-1">Status: Standard</p>
+                <h4 className="text-lg md:text-xl font-black text-white tracking-tighter uppercase italic">Community Node</h4>
+              </div>
+              <p className="text-[9px] md:text-[10px] text-slate-500 font-medium leading-relaxed px-4">
+                Upgrade to Institutional for advanced team metrics and global rankings.
+              </p>
+            </div>
+          )}
+          
+          <div className="p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem] bg-white/[0.02] border border-white/5 w-full">
+            <h4 className="text-[8px] md:text-[9px] font-black text-slate-600 uppercase tracking-widest mb-4 md:mb-6">Reputation Breakdown</h4>
+            <div className="space-y-4 md:space-y-6">
+              {[
+                { label: 'Technical Proofs', val: progress.completedTopics.length * 20, color: 'indigo' },
+                { label: 'Social Consensus', val: 15, color: 'emerald' },
+                { label: 'Network Contribution', val: 5, color: 'amber' },
+              ].map((m, i) => (
+                <div key={i} className="space-y-2">
+                  <div className="flex justify-between text-[7px] md:text-[8px] font-black uppercase">
+                    <span className="text-slate-500">{m.label}</span>
+                    <span className="text-white">{m.val}%</span>
+                  </div>
+                  <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
+                    <div className={`h-full bg-${m.color}-500`} style={{ width: `${m.val}%` }}></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Profile Settings Area */}
+        <div className="lg:col-span-7 cyber-panel rounded-[2.5rem] md:rounded-[3.5rem] p-6 md:p-12 overflow-hidden relative h-fit">
+          <div className="absolute top-0 right-0 w-48 md:w-64 h-48 md:h-64 bg-[#ccff00]/5 blur-[80px] md:blur-[120px] pointer-events-none"></div>
+          
+          <div className="space-y-8 md:space-y-10">
+            <div className="flex flex-col sm:flex-row justify-between items-start gap-6">
+              <div className="w-full sm:w-auto">
+                <h3 className="terminal-text text-[8px] md:text-[10px] uppercase tracking-[0.4em] mb-2 md:mb-3">Identity Record Configuration</h3>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    className="text-2xl md:text-5xl font-black text-white bg-white/5 border border-white/10 rounded-xl md:rounded-2xl px-4 md:px-6 py-2 w-full focus:outline-none focus:border-[#ccff00]/50 tracking-tighter uppercase italic"
+                  />
+                ) : (
+                  <h2 className="text-3xl md:text-6xl font-black text-white tracking-tighter uppercase italic leading-none truncate">
+                    {progress.username || 'Unverified Node'}
+                  </h2>
+                )}
+              </div>
+              <button
+                onClick={() => isEditing ? handleSave() : setIsEditing(true)}
+                className={`w-full sm:w-auto px-6 md:px-8 py-3 rounded-xl md:rounded-2xl font-black text-[8px] md:text-[10px] uppercase tracking-widest transition-all ${isEditing ? 'bg-[#ccff00] text-black' : 'bg-white/5 text-slate-400 border border-white/10 hover:text-white'}`}
+              >
+                {isEditing ? 'SYNC UPDATES' : 'EDIT CORE'}
+              </button>
+            </div>
+
+            {isEditing && (
+              <div className="space-y-4 animate-in fade-in slide-in-from-top-4">
+                <h4 className="terminal-text text-[8px] md:text-[10px] uppercase tracking-[0.2em] opacity-50">Visual Identity Proxy</h4>
+                <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 md:gap-3 p-3 md:p-4 bg-white/5 rounded-xl md:rounded-2xl border border-white/10">
+                  {DEFAULT_AVATARS.map((url, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setSelectedAvatar(url)}
+                      className={`aspect-square rounded-lg border-2 overflow-hidden transition-all ${selectedAvatar === url ? 'border-[#ccff00] scale-110' : 'border-white/10'}`}
+                    >
+                      <img src={url} alt={`Option ${i}`} className="w-full h-full object-cover" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-4">
+              <h4 className="terminal-text text-[8px] md:text-[10px] uppercase tracking-[0.2em] opacity-50">Protocol Objective / Bio</h4>
+              {isEditing ? (
+                <textarea
+                  value={bio}
+                  onChange={(e) => setBio(e.target.value)}
+                  className="w-full h-32 md:h-40 bg-white/5 border border-white/10 rounded-xl md:rounded-2xl p-4 md:p-6 text-xs md:text-sm text-slate-300 font-medium focus:outline-none focus:border-[#ccff00]/50 transition-all resize-none leading-relaxed"
+                />
+              ) : (
+                <div className="p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem] bg-white/[0.02] border border-white/5 text-xs md:text-sm text-slate-400 leading-relaxed font-medium italic">
+                  {progress.bio || "Objective unknown. Node needs calibration."}
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 md:p-6 rounded-xl md:rounded-2xl border border-rose-500/20 bg-rose-500/5 flex items-center gap-4 md:gap-6">
+              <i className="fa-solid fa-triangle-exclamation text-rose-500 text-lg md:text-xl"></i>
+              <p className="text-[8px] md:text-[10px] text-rose-200 font-black uppercase tracking-widest leading-relaxed">
+                Changes to the Identity Core require 128-bit neural signing. Ensure all credentials are accurate before syncing.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default ProfileView;
