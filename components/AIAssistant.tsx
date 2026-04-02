@@ -1,235 +1,239 @@
+// components/AIAssistant.tsx
+// Clarix — Claude-powered AI Assistant with multi-turn conversation
 
 import React, { useState, useRef, useEffect } from 'react';
-import ReactMarkdown from 'react-markdown';
-import { getTutorResponse } from '../services/geminiService';
-import { ChatMessage, Language } from '../types';
-import { GoogleGenAI, Modality, LiveServerMessage } from '@google/genai';
+import { generateAIResponse } from '../services/claudeService';
+import { Language } from '../types';
 
-interface AIAssistantProps {
-  currentContext: string;
+interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
+}
+
+interface Props {
   isOpen: boolean;
   onClose: () => void;
+  currentContext: string;
   language: Language;
 }
 
-const AIAssistant: React.FC<AIAssistantProps> = ({ currentContext, isOpen, onClose, language }) => {
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: 'model', text: "Welcome to your Secure Hub. I'm your AI Co-Pilot. You can type your questions or initiate a Live Voice Link!" }
-  ]);
+const SUGGESTED_PROMPTS = [
+  'Explain this in simple terms',
+  'How does this apply to African markets?',
+  'What are the risks I should know?',
+  'Give me a real-world example',
+  'How do I get started with this?',
+];
+
+const AIAssistant: React.FC<Props> = ({ isOpen, onClose, currentContext, language }) => {
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isLiveMode, setIsLiveMode] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
-  
-  // Live API refs
-  const sessionRef = useRef<any>(null);
-  const inputAudioContextRef = useRef<AudioContext | null>(null);
-  const outputAudioContextRef = useRef<AudioContext | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
+  // Scroll to bottom on new messages
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
-    }
-  }, [messages, isLoading]);
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
-  const handleSend = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim() || isLoading) return;
-    const userMsg = input;
+  // Focus input when opened
+  useEffect(() => {
+    if (isOpen) {
+      setTimeout(() => inputRef.current?.focus(), 300);
+    }
+  }, [isOpen]);
+
+  // Welcome message on first open
+  useEffect(() => {
+    if (isOpen && messages.length === 0) {
+      setMessages([{
+        role: 'assistant',
+        content: "Hello! I'm Clarix AI, your crypto intelligence assistant. I'm here to help you understand what you're learning and navigate the crypto landscape — with a special focus on what matters for African investors. What would you like to explore?",
+        timestamp: new Date(),
+      }]);
+    }
+  }, [isOpen]);
+
+  const sendMessage = async (text: string) => {
+    if (!text.trim() || isLoading) return;
+
+    const userMessage: ChatMessage = {
+      role: 'user',
+      content: text.trim(),
+      timestamp: new Date(),
+    };
+
+    setMessages(prev => [...prev, userMessage]);
     setInput('');
-    setMessages(prev => [...prev, { role: 'user', text: userMsg }]);
     setIsLoading(true);
-    const response = await getTutorResponse(userMsg, currentContext, messages, language);
-    setMessages(prev => [...prev, { role: 'model', text: response }]);
-    setIsLoading(false);
-  };
-
-  const toggleLiveMode = async () => {
-    if (isLiveMode) {
-      if (sessionRef.current) sessionRef.current.close();
-      setIsLiveMode(false);
-      return;
-    }
+    setError(null);
 
     try {
-      setIsLiveMode(true);
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-      
-      const encode = (bytes: Uint8Array) => {
-        let binary = '';
-        for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
-        return btoa(binary);
-      };
+      // Build history for multi-turn (exclude welcome message)
+      const history = messages
+        .filter(m => !(m.role === 'assistant' && messages.indexOf(m) === 0))
+        .map(m => ({ role: m.role, content: m.content }));
 
-      const decode = (base64: string) => {
-        const binaryString = atob(base64);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
-        return bytes;
-      };
+      const response = await generateAIResponse(
+        text.trim(),
+        currentContext,
+        language,
+        history
+      );
 
-      const inputAudioCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
-      const outputAudioCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
-      inputAudioContextRef.current = inputAudioCtx;
-      outputAudioContextRef.current = outputAudioCtx;
-      
-      let nextStartTime = 0;
-      const sources = new Set<AudioBufferSourceNode>();
-
-      const sessionPromise = ai.live.connect({
-        model: 'gemini-2.5-flash-native-audio-preview-12-2025',
-        callbacks: {
-          onopen: () => {
-            navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-              const source = inputAudioCtx.createMediaStreamSource(stream);
-              const scriptProcessor = inputAudioCtx.createScriptProcessor(4096, 1, 1);
-              scriptProcessor.onaudioprocess = (e) => {
-                const inputData = e.inputBuffer.getChannelData(0);
-                const int16 = new Int16Array(inputData.length);
-                for (let i = 0; i < inputData.length; i++) int16[i] = inputData[i] * 32768;
-                sessionPromise.then(session => {
-                  session.sendRealtimeInput({ media: { data: encode(new Uint8Array(int16.buffer)), mimeType: 'audio/pcm;rate=16000' } });
-                });
-              };
-              source.connect(scriptProcessor);
-              scriptProcessor.connect(inputAudioCtx.destination);
-            });
-          },
-          onmessage: async (msg: LiveServerMessage) => {
-            const audioData = msg.serverContent?.modelTurn?.parts[0]?.inlineData?.data;
-            if (audioData) {
-              const bytes = decode(audioData);
-              const dataInt16 = new Int16Array(bytes.buffer);
-              const buffer = outputAudioCtx.createBuffer(1, dataInt16.length, 24000);
-              const channelData = buffer.getChannelData(0);
-              for (let i = 0; i < dataInt16.length; i++) channelData[i] = dataInt16[i] / 32768.0;
-              
-              const source = outputAudioCtx.createBufferSource();
-              source.buffer = buffer;
-              source.connect(outputAudioCtx.destination);
-              
-              nextStartTime = Math.max(nextStartTime, outputAudioCtx.currentTime);
-              source.start(nextStartTime);
-              nextStartTime += buffer.duration;
-              sources.add(source);
-              source.onended = () => sources.delete(source);
-            }
-
-            if (msg.serverContent?.interrupted) {
-              for (const source of sources.values()) {
-                try { source.stop(); } catch(err) {}
-              }
-              sources.clear();
-              nextStartTime = 0;
-            }
-          },
-          onerror: (e: any) => {
-            console.error("Live sync error", e);
-          },
-          onclose: (e: any) => {
-            console.log("Live sync closed", e);
-            setIsLiveMode(false);
-          }
-        },
-        config: {
-          responseModalities: [Modality.AUDIO],
-          speechConfig: {
-            voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Zephyr' } },
-          },
-          systemInstruction: `You are the Clarix Live Tutor. Engaging in a real-time voice conversation about crypto in ${language === Language.EN ? 'English' : language === Language.ES ? 'Spanish' : language === Language.FR ? 'French' : 'Chinese'}. Context: ${currentContext}`,
-        }
-      });
-
-      sessionRef.current = await sessionPromise;
-    } catch (e) {
-      console.error("Live Lab failed", e);
-      setIsLiveMode(false);
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: response,
+        timestamp: new Date(),
+      }]);
+    } catch (err: any) {
+      setError('Failed to get response. Check your Claude API key in settings.');
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage(input);
+    }
+  };
+
+  const clearChat = () => {
+    setMessages([{
+      role: 'assistant',
+      content: "Chat cleared. What would you like to explore?",
+      timestamp: new Date(),
+    }]);
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className={`fixed right-0 md:right-8 bottom-0 md:bottom-28 w-full md:w-[420px] h-full md:h-[650px] glass-panel rounded-none md:rounded-[2.5rem] flex flex-col z-[110] animate-in slide-in-from-bottom md:slide-in-from-right-8 fade-in duration-300`}>
-      <div className="p-5 md:p-7 border-b border-white/5 flex items-center justify-between">
-        <div className="flex items-center gap-3 md:gap-4">
-          <div className="w-10 h-10 md:w-11 md:h-11 rounded-xl md:rounded-2xl bg-white/5 flex items-center justify-center text-emerald-400 border border-white/10">
-            <i className={`fa-solid ${isLiveMode ? 'fa-signal animate-pulse' : 'fa-brain-circuit'} text-lg md:text-xl`}></i>
+    <div className="fixed right-0 bottom-0 md:right-6 md:bottom-24 w-full md:w-[400px] h-[85vh] md:h-[600px] bg-[#0a0a0f] border border-white/10 md:rounded-2xl shadow-2xl shadow-black/50 flex flex-col z-[49] overflow-hidden">
+
+      {/* Header */}
+      <div className="flex items-center justify-between px-5 py-4 border-b border-white/5 bg-black/60 shrink-0">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-electric-violet flex items-center justify-center">
+            <i className="fa-solid fa-brain-circuit text-white text-sm"></i>
           </div>
           <div>
-            <h2 className="font-bold text-base md:text-lg text-white font-display uppercase tracking-tight">AI Co-Pilot</h2>
+            <h3 className="text-white font-bold text-sm">Clarix AI</h3>
             <div className="flex items-center gap-1.5">
-               <span className={`w-1.5 h-1.5 rounded-full ${isLiveMode ? 'bg-rose-500 animate-ping' : 'bg-emerald-500'} shadow-[0_0_8px_#10b981]`}></span>
-               <p className="text-[8px] md:text-[10px] text-slate-400 font-black uppercase tracking-widest">{isLiveMode ? 'LIVE SYNC ACTIVE' : 'SECURE NODE'}</p>
+              <div className="w-1.5 h-1.5 rounded-full bg-cyber-lime animate-pulse"></div>
+              <p className="text-cyber-lime text-[10px] font-semibold">Powered by Claude</p>
             </div>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <button 
-            onClick={toggleLiveMode}
-            className={`w-9 h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center transition-all ${isLiveMode ? 'bg-rose-500 text-white' : 'bg-white/5 text-emerald-400 hover:bg-emerald-500/10'}`}
-            title="Toggle Live Voice Lab"
+          <button
+            onClick={clearChat}
+            className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-all"
+            title="Clear chat"
           >
-            <i className={`fa-solid ${isLiveMode ? 'fa-phone-slash' : 'fa-microphone'} text-sm md:text-base`}></i>
+            <i className="fa-solid fa-broom text-slate-400 text-xs"></i>
           </button>
-          <button onClick={onClose} className="w-9 h-9 md:w-10 md:h-10 rounded-full hover:bg-white/5 flex items-center justify-center text-slate-500 transition-colors">
-            <i className="fa-solid fa-xmark text-lg"></i>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-all"
+          >
+            <i className="fa-solid fa-xmark text-slate-400 text-xs"></i>
           </button>
         </div>
-      </div>
-      
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-5 md:p-7 space-y-5 md:space-y-6 text-sm md:text-[15px] no-scrollbar">
-        {isLiveMode ? (
-          <div className="flex flex-col items-center justify-center h-full text-center space-y-6">
-            <div className="relative">
-              <div className="w-24 h-24 md:w-32 md:h-32 rounded-full bg-emerald-500/20 border border-emerald-500/40 animate-pulse"></div>
-              <div className="absolute inset-0 flex items-center justify-center">
-                 <i className="fa-solid fa-waveform-lines text-3xl md:text-4xl text-emerald-400"></i>
-              </div>
-            </div>
-            <p className="text-xs md:text-sm font-bold text-emerald-400 uppercase tracking-widest">Bi-Directional Audio Stream Established</p>
-            <p className="text-[10px] md:text-xs text-slate-500 max-w-[240px]">Speak naturally to your tutor. Your microphone is live and processing nodes.</p>
-          </div>
-        ) : (
-          messages.map((msg, idx) => (
-            <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[90%] md:max-w-[88%] p-4 md:p-5 rounded-2xl md:rounded-3xl leading-relaxed shadow-lg ${
-                msg.role === 'user' ? 'bg-emerald-600 text-white rounded-tr-none' : 'bg-slate-800/80 text-slate-100 rounded-tl-none border border-white/10'
-              }`}>
-                <div className="markdown-content">
-                  <ReactMarkdown>{msg.text}</ReactMarkdown>
-                </div>
-              </div>
-            </div>
-          ))
-        )}
-        {isLoading && !isLiveMode && (
-          <div className="flex justify-start">
-             <div className="flex gap-2 items-center bg-white/5 px-4 md:px-5 py-3 md:py-4 rounded-2xl md:rounded-3xl">
-                <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce"></div>
-                <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
-             </div>
-          </div>
-        )}
       </div>
 
-      {!isLiveMode && (
-        <div className="p-4 md:p-6 pb-8 md:pb-6 bg-black/60 border-t border-white/5 backdrop-blur-md">
-          <form onSubmit={handleSend} className="relative group">
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask anything..."
-              className="w-full bg-surface border border-white/20 rounded-2xl md:rounded-[2rem] py-4 md:py-5 pl-5 md:pl-7 pr-14 md:pr-16 focus:outline-none focus:border-emerald-500 transition-all text-xs md:text-sm text-white placeholder:text-slate-500 shadow-inner"
-            />
-            <button type="submit" className="absolute right-2 md:right-2.5 top-1/2 -translate-y-1/2 w-9 h-9 md:w-11 md:h-11 rounded-full bg-emerald-500 text-black flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-transform">
-              <i className="fa-solid fa-arrow-up text-base md:text-lg"></i>
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 no-scrollbar">
+        {messages.map((msg, i) => (
+          <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+            {msg.role === 'assistant' && (
+              <div className="w-6 h-6 rounded-full bg-electric-violet/20 border border-electric-violet/30 flex items-center justify-center mr-2 mt-1 shrink-0">
+                <i className="fa-solid fa-brain-circuit text-electric-violet text-[8px]"></i>
+              </div>
+            )}
+            <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${
+              msg.role === 'user'
+                ? 'bg-electric-violet text-white rounded-tr-sm'
+                : 'bg-white/5 border border-white/10 text-slate-200 rounded-tl-sm'
+            }`}>
+              <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+              <p className={`text-[10px] mt-1 ${msg.role === 'user' ? 'text-white/50 text-right' : 'text-slate-600'}`}>
+                {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </p>
+            </div>
+          </div>
+        ))}
+
+        {/* Loading indicator */}
+        {isLoading && (
+          <div className="flex justify-start">
+            <div className="w-6 h-6 rounded-full bg-electric-violet/20 border border-electric-violet/30 flex items-center justify-center mr-2 mt-1 shrink-0">
+              <i className="fa-solid fa-brain-circuit text-electric-violet text-[8px]"></i>
+            </div>
+            <div className="bg-white/5 border border-white/10 rounded-2xl rounded-tl-sm px-4 py-3">
+              <div className="flex items-center gap-1">
+                <div className="w-1.5 h-1.5 rounded-full bg-electric-violet animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                <div className="w-1.5 h-1.5 rounded-full bg-electric-violet animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                <div className="w-1.5 h-1.5 rounded-full bg-electric-violet animate-bounce" style={{ animationDelay: '300ms' }}></div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Error */}
+        {error && (
+          <div className="bg-red-400/10 border border-red-400/20 rounded-xl px-4 py-3">
+            <p className="text-red-400 text-xs">{error}</p>
+          </div>
+        )}
+
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* Suggested prompts */}
+      {messages.length <= 1 && (
+        <div className="px-4 pb-2 flex gap-2 overflow-x-auto no-scrollbar shrink-0">
+          {SUGGESTED_PROMPTS.map((prompt, i) => (
+            <button
+              key={i}
+              onClick={() => sendMessage(prompt)}
+              className="shrink-0 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-slate-300 text-[11px] hover:bg-electric-violet/20 hover:border-electric-violet/30 hover:text-white transition-all"
+            >
+              {prompt}
             </button>
-          </form>
+          ))}
         </div>
       )}
+
+      {/* Input */}
+      <div className="px-4 py-3 border-t border-white/5 bg-black/40 shrink-0">
+        <div className="flex items-end gap-2">
+          <textarea
+            ref={inputRef}
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Ask anything about crypto..."
+            rows={1}
+            className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm placeholder-slate-500 resize-none focus:outline-none focus:border-electric-violet/50 transition-all"
+            style={{ maxHeight: '120px' }}
+          />
+          <button
+            onClick={() => sendMessage(input)}
+            disabled={!input.trim() || isLoading}
+            className="w-10 h-10 rounded-xl bg-electric-violet disabled:opacity-40 disabled:cursor-not-allowed hover:bg-violet-500 transition-all flex items-center justify-center shrink-0"
+          >
+            <i className="fa-solid fa-paper-plane text-white text-sm"></i>
+          </button>
+        </div>
+        <p className="text-slate-600 text-[10px] mt-2 text-center">Press Enter to send · Shift+Enter for new line</p>
+      </div>
+
     </div>
   );
 };
