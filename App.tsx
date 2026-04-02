@@ -514,7 +514,10 @@ useEffect(() => {
                   <>
                     <ZkPrivacyCloak isActive={progress.isPrivate} onToggle={togglePrivacy} />
                     <ProFeatureWrapper isPro={progress.isPro} featureName={tTerm("Neural Network Analytics")} onUpgrade={togglePro}>
-                      <AiSentimentOracle />
+                      <AiSentimentOracle
+  userRole={progress.guild !== 'NONE' ? progress.guild : 'Investor'}
+  completedTopics={progress.completedTopics}
+/>
                     </ProFeatureWrapper>
                     <PortfolioTracker progress={progress} onUpdate={(u) => setProgress(p => ({ ...p, ...u }))} />
                     <SkillSpider metrics={progress.metrics} />
