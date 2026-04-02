@@ -1,95 +1,192 @@
+// components/AiSentimentOracle.tsx
+// Clarix — Claude-powered AI Sentiment Oracle
 
 import React, { useState, useEffect } from 'react';
-import ReactMarkdown from 'react-markdown';
-import { GoogleGenAI } from "@google/genai";
-import { useTerminology } from '../hooks/useTerminology';
+import { generateSentimentAnalysis, SentimentAnalysis } from '../services/claudeService';
 
-const AiSentimentOracle: React.FC = () => {
-  const { Term } = useTerminology();
-  const [narratives, setNarratives] = useState([
-    { id: 'zk', name: 'ZK-Privacy', sentiment: 88, trend: 'up' },
-    { id: 'ai', name: 'AI Agents', sentiment: 94, trend: 'up' },
-    { id: 'rwa', name: 'RWA Tokens', sentiment: 42, trend: 'down' },
-    { id: 'depin', name: 'DePIN Infra', sentiment: 67, trend: 'stable' }
-  ]);
-  const [directive, setDirective] = useState("AI sentiment is highly bullish on Agentic infrastructure. Strategic reallocation to compute-based sub-sectors is recommended for maximum capital efficiency.");
-  const [loading, setLoading] = useState(false);
+interface Props {
+  userRole?: string;
+  completedTopics?: string[];
+}
 
-  const refreshSentiment = async () => {
-    setLoading(true);
+const AiSentimentOracle: React.FC<Props> = ({ userRole = 'Investor', completedTopics = [] }) => {
+  const [data, setData] = useState<SentimentAnalysis | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
+
+  const fetchSentiment = async () => {
+    setIsLoading(true);
+    setError(null);
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-      const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: "Analyze the current top 4 crypto narratives. Provide a list of names/sentiments/trends and a one-sentence 'Tactical Directive' summarizing the current optimal market behavior.",
-        config: {
-          responseMimeType: "application/json",
-          tools: [{ googleSearch: {} }]
-        }
-      });
-      
-      // Simulation for interactivity
-      setTimeout(() => {
-        setNarratives(prev => prev.map(n => ({ ...n, sentiment: Math.min(100, Math.max(10, n.sentiment + (Math.random() * 10 - 5))) })));
-        setLoading(false);
-      }, 1500);
-    } catch (e) {
-      setLoading(false);
+      const result = await generateSentimentAnalysis(userRole, completedTopics);
+      setData(result);
+      setLastRefresh(new Date());
+    } catch (err: any) {
+      setError('Oracle temporarily offline. Check your Claude API key.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchSentiment();
+    // Refresh every 5 minutes
+    const interval = setInterval(fetchSentiment, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [userRole]);
+
+  const sentimentColor = (s: string) => {
+    switch (s) {
+      case 'Bullish': return 'text-cyber-lime';
+      case 'Bearish': return 'text-red-400';
+      case 'Volatile': return 'text-orange-400';
+      default: return 'text-yellow-400';
+    }
+  };
+
+  const riskColor = (r: string) => {
+    switch (r) {
+      case 'Low': return 'bg-cyber-lime/10 text-cyber-lime border-cyber-lime/20';
+      case 'Medium': return 'bg-yellow-400/10 text-yellow-400 border-yellow-400/20';
+      case 'High': return 'bg-orange-400/10 text-orange-400 border-orange-400/20';
+      case 'Extreme': return 'bg-red-400/10 text-red-400 border-red-400/20';
+      default: return 'bg-white/5 text-slate-400 border-white/10';
+    }
+  };
+
+  const signalColor = (s: string) => {
+    switch (s) {
+      case 'Buy': return 'text-cyber-lime bg-cyber-lime/10 border-cyber-lime/20';
+      case 'Hold': return 'text-blue-400 bg-blue-400/10 border-blue-400/20';
+      case 'Watch': return 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20';
+      case 'Caution': return 'text-red-400 bg-red-400/10 border-red-400/20';
+      default: return 'text-slate-400 bg-white/5 border-white/10';
     }
   };
 
   return (
-    <div className="p-6 md:p-8 rounded-2xl md:rounded-[2.5rem] bg-surface border border-electric-violet/20 relative overflow-hidden group">
-      <div className="absolute top-0 left-0 w-24 md:w-32 h-24 md:h-32 bg-electric-violet/5 blur-2xl md:blur-3xl"></div>
-      
-      <div className="flex items-center justify-between mb-6 md:mb-8">
-        <div className="flex items-center gap-2 md:gap-3">
-          <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-electric-violet/10 flex items-center justify-center text-electric-violet">
-            <i className="fa-solid fa-wand-sparkles text-xs md:text-sm"></i>
+    <div className="rounded-2xl border border-white/10 bg-black/40 backdrop-blur-xl overflow-hidden">
+
+      {/* Header */}
+      <div className="flex items-center justify-between px-5 py-4 border-b border-white/5">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-electric-violet/20 border border-electric-violet/30 flex items-center justify-center">
+            <i className="fa-solid fa-brain-circuit text-electric-violet text-sm"></i>
           </div>
-          <h4 className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.3em] text-slate-500"><Term term="Neural Network Analytics" /></h4>
+          <div>
+            <h3 className="text-white font-bold text-sm">AI Sentiment Oracle</h3>
+            <p className="text-slate-500 text-[10px]">Powered by Claude AI</p>
+          </div>
         </div>
-        <button 
-          onClick={refreshSentiment}
-          disabled={loading}
-          className={`w-7 h-7 md:w-8 md:h-8 rounded-lg bg-white/5 flex items-center justify-center text-slate-400 hover:text-white transition-all disabled:opacity-50 ${loading ? 'animate-spin' : ''}`}
+        <button
+          onClick={fetchSentiment}
+          disabled={isLoading}
+          className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-all"
         >
-          <i className="fa-solid fa-rotate-right text-[8px] md:text-[10px]"></i>
+          <i className={`fa-solid fa-rotate text-slate-400 text-xs ${isLoading ? 'animate-spin' : ''}`}></i>
         </button>
       </div>
 
-      <div className="space-y-5 md:space-y-6 mb-6 md:mb-8">
-        {narratives.map((n) => (
-          <div key={n.id} className="space-y-1.5 md:space-y-2">
-            <div className="flex justify-between items-center text-[8px] md:text-[9px] font-black uppercase tracking-widest">
-              <span className="text-white">{n.name}</span>
-              <span className={n.trend === 'up' ? 'text-emerald-500' : 'text-rose-500'}>
-                {n.sentiment.toFixed(0)}% <i className={`fa-solid fa-arrow-${n.trend} text-[6px] md:text-[8px]`}></i>
+      {/* Loading */}
+      {isLoading && !data && (
+        <div className="px-5 py-8 flex flex-col items-center gap-3">
+          <div className="w-5 h-5 border-2 border-electric-violet border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-slate-400 text-xs">Oracle analyzing markets...</p>
+        </div>
+      )}
+
+      {/* Error */}
+      {error && !data && (
+        <div className="px-5 py-6 text-center">
+          <i className="fa-solid fa-triangle-exclamation text-orange-400 mb-2"></i>
+          <p className="text-orange-400 text-xs mb-3">{error}</p>
+          <button onClick={fetchSentiment} className="text-electric-violet text-xs underline">Retry</button>
+        </div>
+      )}
+
+      {/* Data */}
+      {data && (
+        <div className="px-5 py-4 space-y-4">
+
+          {/* Overall Sentiment */}
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-slate-500 text-[10px] uppercase tracking-widest mb-1">Overall Signal</p>
+              <p className={`text-2xl font-black tracking-tight ${sentimentColor(data.overallSentiment)}`}>
+                {data.overallSentiment}
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-slate-500 text-[10px] uppercase tracking-widest mb-1">Risk Level</p>
+              <span className={`px-3 py-1 rounded-full text-xs font-bold border ${riskColor(data.riskLevel)}`}>
+                {data.riskLevel}
               </span>
             </div>
-            <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-gradient-to-r from-electric-violet to-cyber-lime transition-all duration-1000" 
-                style={{ width: `${n.sentiment}%` }}
-              ></div>
+          </div>
+
+          {/* Score Bar */}
+          <div>
+            <div className="flex justify-between text-[10px] text-slate-500 mb-1">
+              <span>Fear</span>
+              <span>Score: {data.sentimentScore}/100</span>
+              <span>Greed</span>
+            </div>
+            <div className="h-2 rounded-full bg-white/5 overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all duration-1000"
+                style={{
+                  width: `${data.sentimentScore}%`,
+                  background: `linear-gradient(to right, #ef4444, #eab308, #84cc16)`,
+                }}
+              />
             </div>
           </div>
-        ))}
-      </div>
 
-      <div className="p-4 md:p-5 rounded-xl md:rounded-2xl bg-white/5 border border-white/5 relative overflow-hidden">
-        <div className="absolute -right-4 -bottom-4 opacity-5">
-          <i className="fa-solid fa-brain text-4xl md:text-5xl"></i>
+          {/* Market Narrative */}
+          <p className="text-slate-300 text-xs leading-relaxed border-l-2 border-electric-violet/40 pl-3">
+            {data.marketNarrative}
+          </p>
+
+          {/* Asset Signals */}
+          <div className="space-y-2">
+            <p className="text-slate-500 text-[10px] uppercase tracking-widest">Asset Signals</p>
+            {data.signals.map((signal, i) => (
+              <div key={i} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <span className="text-white text-xs font-bold">{signal.asset}</span>
+                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-black border ${signalColor(signal.signal)}`}>
+                      {signal.signal}
+                    </span>
+                  </div>
+                  <p className="text-slate-500 text-[10px] leading-snug">{signal.rationale}</p>
+                </div>
+                <div className="ml-3 text-right shrink-0">
+                  <p className="text-slate-400 text-[10px]">{signal.confidence}%</p>
+                  <p className="text-slate-600 text-[9px]">conf.</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Africa Note */}
+          <div className="rounded-xl bg-cyber-lime/5 border border-cyber-lime/10 px-4 py-3">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-[10px]">🌍</span>
+              <p className="text-cyber-lime text-[10px] font-bold uppercase tracking-widest">Africa Market Note</p>
+            </div>
+            <p className="text-slate-300 text-[11px] leading-relaxed">{data.africanMarketNote}</p>
+          </div>
+
+          {/* Last refresh */}
+          {lastRefresh && (
+            <p className="text-slate-600 text-[10px] text-right">
+              Last analyzed: {lastRefresh.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </p>
+          )}
         </div>
-        <p className="text-[6px] md:text-[7px] font-black text-slate-600 uppercase tracking-widest mb-1.5 md:mb-2">Tactical Directive:</p>
-        <div className="text-[9px] md:text-[10px] text-slate-300 font-medium leading-relaxed italic markdown-content">
-          <ReactMarkdown>{"\"" + directive + "\""}</ReactMarkdown>
-        </div>
-      </div>
-      
-      <p className="mt-6 md:mt-8 text-[7px] md:text-[8px] font-bold text-slate-600 uppercase tracking-widest text-center">
-        AI-Augmented Narrative Analysis
-      </p>
+      )}
     </div>
   );
 };
