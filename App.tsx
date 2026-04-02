@@ -302,8 +302,6 @@ useEffect(() => {
           console.error("Error signing in with Google", error);
           if (error.code === 'auth/popup-closed-by-user') {
             throw new Error('Sign-in popup was closed before completing. Please try again.');
-          } else if (error.code === 'auth/unauthorized-domain') {
-            throw new Error('This domain is not authorized for Google Sign-In. Please add it to the Firebase Console.');
           } else if (error.code === 'auth/popup-blocked') {
             throw new Error('Sign-in popup was blocked by your browser. Please allow popups for this site.');
           } else if (error.code === 'auth/cancelled-popup-request') {
