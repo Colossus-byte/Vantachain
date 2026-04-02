@@ -40,7 +40,7 @@ import LearningModeBanner from './components/LearningModeBanner';
 import { useTerminology } from './hooks/useTerminology';
 import { TOPICS, UI_TRANSLATIONS, DEFAULT_AVATARS } from './constants';
 import { UserProgress, QuizQuestion, Language, Guild, P2PMessage, P2PTransaction, ProtocolNotification, Recommendation } from './types';
-import { generateQuiz, generatePathRecommendation } from './services/geminiService';
+import { generateQuiz, generatePathRecommendation } from './services/claudeService';
 import { FirebaseProvider, useFirebase } from './contexts/FirebaseContext';
 import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { auth, db } from './firebase';
