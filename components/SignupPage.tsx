@@ -8,7 +8,7 @@ declare global {
 }
 
 interface SignupPageProps {
-  onSignup: (email: string) => void;
+  onSignup: (email: string) => Promise<void>;
   onWalletConnect: (address: string) => void;
 }
 
@@ -18,6 +18,19 @@ const SignupPage: React.FC<SignupPageProps> = ({ onSignup, onWalletConnect }) =>
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isConnecting, setIsConnecting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const handleGoogleLogin = async () => {
+    setIsConnecting(true);
+    setErrorMsg(null);
+    try {
+      await onSignup('');
+    } catch (error: any) {
+      console.error("Google login error:", error);
+      setErrorMsg(error.message || 'Failed to connect with Google. Please try again.');
+    } finally {
+      setIsConnecting(false);
+    }
+  };
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -105,11 +118,12 @@ const SignupPage: React.FC<SignupPageProps> = ({ onSignup, onWalletConnect }) =>
             </div>
           )}
           <button 
-            onClick={() => onSignup('')}
-            className="w-full py-4 mt-4 rounded-xl bg-white hover:bg-slate-100 text-black font-black uppercase tracking-widest text-sm transition-all shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_30px_rgba(255,255,255,0.2)] hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-3"
+            onClick={handleGoogleLogin}
+            disabled={isConnecting}
+            className="w-full py-4 mt-4 rounded-xl bg-white hover:bg-slate-100 text-black font-black uppercase tracking-widest text-sm transition-all shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_30px_rgba(255,255,255,0.2)] hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50 disabled:hover:scale-100"
           >
             <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-5 h-5" />
-            Continue with Google
+            {isConnecting ? 'Connecting...' : 'Continue with Google'}
           </button>
         </div>
 

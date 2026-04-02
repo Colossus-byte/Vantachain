@@ -2,10 +2,11 @@ import React from 'react';
 import { motion } from 'motion/react';
 
 interface WalletSummaryCardProps {
-  address: string;
+  address?: string;
+  onConnect: () => void;
 }
 
-const WalletSummaryCard: React.FC<WalletSummaryCardProps> = ({ address }) => {
+const WalletSummaryCard: React.FC<WalletSummaryCardProps> = ({ address, onConnect }) => {
   // Mock data for public blockchain data
   const ethBalance = "1.45";
   const ethValue = "$4,825.30";
@@ -36,10 +37,10 @@ const WalletSummaryCard: React.FC<WalletSummaryCardProps> = ({ address }) => {
             {address ? (
               address
             ) : (
-              <span className="flex items-center gap-2 text-slate-500">
-                <i className="fa-solid fa-link-slash opacity-50"></i> 
-                <span className="italic opacity-70">0x... (Awaiting Connection)</span>
-              </span>
+              <button onClick={onConnect} className="flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors">
+                <i className="fa-solid fa-link"></i> 
+                <span className="font-bold uppercase tracking-widest text-[10px]">Connect Wallet</span>
+              </button>
             )}
           </div>
         </div>
@@ -47,16 +48,16 @@ const WalletSummaryCard: React.FC<WalletSummaryCardProps> = ({ address }) => {
         <div className="flex flex-col md:items-end">
           <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mb-1">Total Balance</p>
           <div className="flex items-baseline gap-2">
-            <h2 className="text-3xl md:text-4xl font-black text-white tracking-tighter">{ethBalance} <span className="text-lg text-blue-500">ETH</span></h2>
+            <h2 className="text-3xl md:text-4xl font-black text-white tracking-tighter">{address ? ethBalance : "0.00"} <span className="text-lg text-blue-500">ETH</span></h2>
           </div>
-          <p className="text-sm text-emerald-400 font-medium mt-1">≈ {ethValue}</p>
+          <p className="text-sm text-emerald-400 font-medium mt-1">≈ {address ? ethValue : "$0.00"}</p>
         </div>
       </div>
 
       <div className="mt-8 pt-6 border-t border-white/5">
         <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-4">Top Holdings</h4>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {topHoldings.map((holding, idx) => (
+          {address ? topHoldings.map((holding, idx) => (
             <div key={idx} className="bg-white/5 border border-white/5 rounded-2xl p-4 flex items-center justify-between hover:bg-white/10 transition-colors">
               <div className="flex items-center gap-3">
                 <div className={`w-8 h-8 rounded-full bg-black/40 flex items-center justify-center ${holding.color}`}>
@@ -69,7 +70,11 @@ const WalletSummaryCard: React.FC<WalletSummaryCardProps> = ({ address }) => {
               </div>
               <p className="text-white font-medium text-sm">{holding.value}</p>
             </div>
-          ))}
+          )) : (
+            <div className="col-span-3 text-center py-6 text-slate-500 text-sm">
+              Connect your wallet to view your holdings.
+            </div>
+          )}
         </div>
       </div>
     </motion.div>

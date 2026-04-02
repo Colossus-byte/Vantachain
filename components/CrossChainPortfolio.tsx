@@ -231,6 +231,13 @@ export default function CrossChainPortfolio({ walletAddress, onConnectWallet }: 
           />
         </div>
         <button
+          type="button"
+          onClick={onConnectWallet}
+          className="px-6 py-4 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold rounded-2xl transition-all flex items-center justify-center gap-2 whitespace-nowrap"
+        >
+          <i className="fa-solid fa-link"></i> Connect
+        </button>
+        <button
           type="submit"
           disabled={isFetching || !addressInput}
           className="px-8 py-4 bg-blue-500 hover:bg-blue-600 disabled:bg-slate-700 disabled:text-slate-400 text-white font-bold rounded-2xl transition-all flex items-center justify-center gap-2 whitespace-nowrap"

@@ -101,6 +101,28 @@ const AppContent: React.FC = () => {
     }
   };
 
+  const connectWallet = async () => {
+    try {
+      if (typeof window.ethereum !== 'undefined') {
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        if (accounts && accounts.length > 0) {
+          const address = accounts[0];
+          const did = `did:ethr:${address}`;
+          setProgress(p => ({
+            ...p,
+            walletAddress: address,
+            did
+          }));
+        }
+      } else {
+        alert("MetaMask is not installed. Please install it to use this feature.");
+        window.open('https://metamask.io/download/', '_blank');
+      }
+    } catch (error) {
+      console.error("Wallet connection error:", error);
+    }
+  };
+
   const [activeView, setActiveView] = useState<'academy' | 'certification' | 'institutional' | 'guilds' | 'governance' | 'peers' | 'profile' | 'market' | 'portfolio'>('academy');
   const [isQuizMode, setIsQuizMode] = useState(false);
   const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
@@ -236,13 +258,23 @@ const AppContent: React.FC = () => {
               isPro: false,
               username: email.split('@')[0] || 'NewUser'
             };
-            updateProgress(newProgress);
+            await updateProgress(newProgress);
           }
           
           window.history.pushState({}, '', '/dashboard');
           window.dispatchEvent(new PopStateEvent('popstate'));
-        } catch (error) {
+        } catch (error: any) {
           console.error("Error signing in with Google", error);
+          if (error.code === 'auth/popup-closed-by-user') {
+            throw new Error('Sign-in popup was closed before completing. Please try again.');
+          } else if (error.code === 'auth/unauthorized-domain') {
+            throw new Error('This domain is not authorized for Google Sign-In. Please add it to the Firebase Console.');
+          } else if (error.code === 'auth/popup-blocked') {
+            throw new Error('Sign-in popup was blocked by your browser. Please allow popups for this site.');
+          } else if (error.code === 'auth/cancelled-popup-request') {
+            throw new Error('Sign-in request was cancelled. Please try again.');
+          }
+          throw new Error(error.message || 'Failed to sign in with Google.');
         }
       }} 
       onWalletConnect={(address) => {
@@ -388,9 +420,7 @@ const AppContent: React.FC = () => {
           {activeView === 'academy' && (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 md:gap-16">
               <div className="lg:col-span-12 space-y-12">
-                {progress.walletAddress && (
-                  <WalletSummaryCard address={progress.walletAddress} />
-                )}
+                <WalletSummaryCard address={progress.walletAddress} onConnect={connectWallet} />
                 {!isQuizMode && (recommendation || isGeneratingRecommendation) && (
                   <NeuralRoadmap 
                     recommendation={recommendation} 
@@ -461,7 +491,7 @@ const AppContent: React.FC = () => {
           {activeView === 'portfolio' && (
             <CrossChainPortfolio 
               walletAddress={progress.walletAddress} 
-              onConnectWallet={() => {}} 
+              onConnectWallet={connectWallet} 
             />
           )}
           {activeView === 'peers' && <PeerNexus progress={progress} onSendMessage={() => {}} onSendTokens={() => {}} />}

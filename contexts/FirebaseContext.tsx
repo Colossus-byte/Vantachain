@@ -66,12 +66,13 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, [user, isAuthReady]);
 
   const updateProgress = async (updates: Partial<UserProgress>) => {
-    if (!user) return;
+    const currentUser = auth.currentUser;
+    if (!currentUser) return;
     try {
-      const docRef = doc(db, 'users', user.uid);
+      const docRef = doc(db, 'users', currentUser.uid);
       await setDoc(docRef, updates, { merge: true });
     } catch (error) {
-      handleFirestoreError(error, OperationType.WRITE, `users/${user.uid}`);
+      handleFirestoreError(error, OperationType.WRITE, `users/${currentUser.uid}`);
     }
   };
 

@@ -67,11 +67,11 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
       <div className="max-w-4xl w-full relative z-10 py-8">
         <div className="flex justify-between items-center mb-8 md:mb-16">
           <div className="flex gap-1.5 md:gap-2">
-            {[1, 2, 3].map(s => (
+            {[1, 2, 3, 4].map(s => (
               <div key={s} className={`h-1 w-8 md:w-12 rounded-full transition-all duration-500 ${step >= s ? 'bg-blue-500' : 'bg-white/10'}`}></div>
             ))}
           </div>
-          <span className="terminal-text text-[8px] md:text-[10px] uppercase tracking-widest text-slate-400">Setup Progress: {step === 1 ? '30%' : step === 2 ? '60%' : '90%'}</span>
+          <span className="terminal-text text-[8px] md:text-[10px] uppercase tracking-widest text-slate-400">Setup Progress: {step === 1 ? '25%' : step === 2 ? '50%' : step === 3 ? '75%' : '100%'}</span>
         </div>
 
         {step === 1 ? (
@@ -145,7 +145,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                 </button>
              </div>
           </div>
-        ) : (
+         ) : step === 3 ? (
           <div className="animate-in fade-in slide-in-from-bottom-8 duration-700">
             <h2 className="text-3xl md:text-5xl font-bold text-white mb-3 md:mb-4 tracking-tighter uppercase italic">Set Up Your Profile</h2>
             <p className="text-xs md:text-sm text-slate-400 mb-8 md:mb-12 font-medium">Tell us a bit about yourself so we can personalize your experience.</p>
@@ -193,12 +193,53 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
               </div>
             </div>
 
-            <div className="mt-12 md:mt-16 flex flex-col sm:flex-row justify-between items-center gap-6">
+             <div className="mt-12 md:mt-16 flex flex-col sm:flex-row justify-between items-center gap-6">
               <button onClick={() => setStep(2)} className="text-slate-500 font-bold uppercase tracking-widest text-[8px] md:text-[10px] hover:text-white transition-colors">Back</button>
               <button 
                 disabled={!username.trim()}
-                onClick={() => onComplete(username, selectedAvatar, bio, role, selectedGuild)}
+                onClick={() => setStep(4)}
                 className="w-full sm:w-auto px-12 md:px-16 py-4 md:py-5 bg-blue-500 text-white font-bold uppercase tracking-widest text-[10px] md:text-xs rounded-full hover:shadow-[0_0_40px_rgba(59,130,246,0.5)] hover:scale-105 active:scale-95 transition-all disabled:opacity-20"
+              >
+                Next Step
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="animate-in fade-in slide-in-from-bottom-8 duration-700">
+            <h2 className="text-3xl md:text-5xl font-bold text-white mb-3 md:mb-4 tracking-tighter uppercase italic">Explore Clarix</h2>
+            <p className="text-xs md:text-sm text-slate-400 mb-8 md:mb-12 font-medium">Here are the core features you'll use to master Web3.</p>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+              <div className="bg-white/[0.02] border border-white/5 p-6 md:p-8 rounded-2xl md:rounded-3xl hover:border-blue-500/30 transition-all">
+                <div className="w-12 h-12 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center text-xl mb-6">
+                  <i className="fa-solid fa-graduation-cap"></i>
+                </div>
+                <h4 className="font-bold text-xl text-white mb-3">Academy</h4>
+                <p className="text-sm text-slate-400 leading-relaxed">Master Web3 concepts through interactive learning modules and earn $PATH tokens.</p>
+              </div>
+              
+              <div className="bg-white/[0.02] border border-white/5 p-6 md:p-8 rounded-2xl md:rounded-3xl hover:border-purple-500/30 transition-all">
+                <div className="w-12 h-12 rounded-xl bg-purple-500/10 text-purple-500 flex items-center justify-center text-xl mb-6">
+                  <i className="fa-solid fa-brain"></i>
+                </div>
+                <h4 className="font-bold text-xl text-white mb-3">Neural Feed</h4>
+                <p className="text-sm text-slate-400 leading-relaxed">Get AI-powered insights, real-time market sentiment, and personalized crypto news.</p>
+              </div>
+
+              <div className="bg-white/[0.02] border border-white/5 p-6 md:p-8 rounded-2xl md:rounded-3xl hover:border-emerald-500/30 transition-all">
+                <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center text-xl mb-6">
+                  <i className="fa-solid fa-chart-line"></i>
+                </div>
+                <h4 className="font-bold text-xl text-white mb-3">Market Intel</h4>
+                <p className="text-sm text-slate-400 leading-relaxed">Track your portfolio, analyze live token data, and discover new opportunities.</p>
+              </div>
+            </div>
+
+            <div className="mt-12 md:mt-16 flex flex-col sm:flex-row justify-between items-center gap-6">
+              <button onClick={() => setStep(3)} className="text-slate-500 font-bold uppercase tracking-widest text-[8px] md:text-[10px] hover:text-white transition-colors">Back</button>
+              <button 
+                onClick={() => onComplete(username, selectedAvatar, bio, role, selectedGuild)}
+                className="w-full sm:w-auto px-12 md:px-16 py-4 md:py-5 bg-white text-black font-bold uppercase tracking-widest text-[10px] md:text-xs rounded-full hover:shadow-[0_0_40px_rgba(255,255,255,0.3)] hover:scale-105 active:scale-95 transition-all"
               >
                 Enter Clarix
               </button>
