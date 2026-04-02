@@ -68,7 +68,7 @@ const PeerNexus: React.FC<PeerNexusProps> = ({ progress, onSendMessage, onSendTo
                 key={peer.id}
                 onClick={() => setSelectedPeerId(peer.id)}
                 className={`w-full p-4 md:p-6 rounded-xl md:rounded-2xl border transition-all duration-500 flex items-center justify-between group ${
-                  selectedPeerId === peer.id ? 'bg-[#ccff00]/10 border-[#ccff00] scale-[1.02]' : 'bg-white/[0.02] border-white/5 hover:border-white/20'
+                  selectedPeerId === peer.id ? 'bg-cyber-lime/10 border-cyber-lime scale-[1.02]' : 'bg-white/[0.02] border-white/5 hover:border-white/20'
                 }`}
               >
                 <div className="flex items-center gap-3 md:gap-4">
@@ -77,12 +77,12 @@ const PeerNexus: React.FC<PeerNexusProps> = ({ progress, onSendMessage, onSendTo
                   </div>
                   <div className="text-left">
                     <p className="text-xs md:text-sm font-bold text-white tracking-tight uppercase leading-none mb-1">{peer.address}</p>
-                    <span className={`text-[7px] md:text-[8px] font-black uppercase tracking-widest ${peer.status === 'online' ? 'text-[#ccff00]' : 'text-slate-500'}`}>
+                    <span className={`text-[7px] md:text-[8px] font-black uppercase tracking-widest ${peer.status === 'online' ? 'text-cyber-lime' : 'text-slate-500'}`}>
                       {peer.status} • {peer.latency}ms
                     </span>
                   </div>
                 </div>
-                <i className={`fa-solid fa-signal text-[8px] md:text-[10px] ${peer.status === 'online' ? 'text-[#ccff00]' : 'text-slate-800'}`}></i>
+                <i className={`fa-solid fa-signal text-[8px] md:text-[10px] ${peer.status === 'online' ? 'text-cyber-lime' : 'text-slate-800'}`}></i>
               </button>
             );
           })}
@@ -111,7 +111,7 @@ const PeerNexus: React.FC<PeerNexusProps> = ({ progress, onSendMessage, onSendTo
                   >
                     <i className="fa-solid fa-arrow-left text-xs"></i>
                   </button>
-                  <div className="w-2 h-2 rounded-full bg-[#ccff00] animate-pulse"></div>
+                  <div className="w-2 h-2 rounded-full bg-cyber-lime animate-pulse"></div>
                   <span className="text-[8px] md:text-[10px] font-black text-white uppercase tracking-widest truncate max-w-[150px] md:max-w-none">
                     Signal Encrypted: {selectedPeer?.address}
                   </span>
@@ -135,7 +135,7 @@ const PeerNexus: React.FC<PeerNexusProps> = ({ progress, onSendMessage, onSendTo
                          />
                       </div>
                       <div className={`max-w-[85%] md:max-w-[80%] p-4 md:p-5 rounded-2xl md:rounded-3xl text-xs md:text-sm leading-relaxed ${
-                        msg.senderId === 'me' ? 'bg-[#8b5cf6] text-white rounded-tr-none' : 'bg-white/5 text-slate-200 rounded-tl-none border border-white/5'
+                        msg.senderId === 'me' ? 'bg-electric-violet text-white rounded-tr-none' : 'bg-white/5 text-slate-200 rounded-tl-none border border-white/5'
                       }`}>
                         {msg.text}
                         <div className="text-[7px] md:text-[8px] mt-2 opacity-50 font-black uppercase tracking-widest">
@@ -154,9 +154,9 @@ const PeerNexus: React.FC<PeerNexusProps> = ({ progress, onSendMessage, onSendTo
                     value={chatInput}
                     onChange={(e) => setChatInput(e.target.value)}
                     placeholder="Broadcast signal..."
-                    className="w-full bg-black/40 border border-white/10 rounded-xl md:rounded-2xl py-3 md:py-4 pl-4 md:pl-6 pr-12 md:pr-16 focus:outline-none focus:border-[#ccff00]/30 transition-all text-xs md:text-sm terminal-text"
+                    className="w-full bg-black/40 border border-white/10 rounded-xl md:rounded-2xl py-3 md:py-4 pl-4 md:pl-6 pr-12 md:pr-16 focus:outline-none focus:border-cyber-lime/30 transition-all text-xs md:text-sm terminal-text"
                   />
-                  <button type="submit" className="absolute right-1.5 md:right-2 top-1/2 -translate-y-1/2 w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-[#ccff00] text-black flex items-center justify-center shadow-lg shadow-[#ccff00]/10">
+                  <button type="submit" className="absolute right-1.5 md:right-2 top-1/2 -translate-y-1/2 w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-cyber-lime text-black flex items-center justify-center shadow-lg shadow-cyber-lime/10">
                     <i className="fa-solid fa-paper-plane text-[10px] md:text-xs"></i>
                   </button>
                 </div>
@@ -164,10 +164,10 @@ const PeerNexus: React.FC<PeerNexusProps> = ({ progress, onSendMessage, onSendTo
             </div>
 
             {/* Token Transfer Widget */}
-            <div className="cyber-panel rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-8 border-[#ccff00]/10">
+            <div className="cyber-panel rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-8 border-cyber-lime/10">
               <div className="flex flex-col md:flex-row items-center justify-between gap-6 md:gap-8">
                 <div className="flex items-center gap-4 md:gap-6 self-start md:self-auto">
-                  <div className="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-[#ccff00]/10 border border-[#ccff00]/20 flex items-center justify-center text-[#ccff00] text-lg md:text-xl">
+                  <div className="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-cyber-lime/10 border border-cyber-lime/20 flex items-center justify-center text-cyber-lime text-lg md:text-xl">
                     <i className="fa-solid fa-money-bill-transfer"></i>
                   </div>
                   <div>
@@ -182,15 +182,15 @@ const PeerNexus: React.FC<PeerNexusProps> = ({ progress, onSendMessage, onSendTo
                     value={transferAmount}
                     onChange={(e) => setTransferAmount(Number(e.target.value))}
                     placeholder="0.00"
-                    className="w-full bg-white/5 border border-white/10 rounded-xl md:rounded-2xl py-3 md:py-4 px-4 md:px-6 text-lg md:text-xl font-bold text-white focus:outline-none focus:border-[#ccff00]/40 transition-all"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl md:rounded-2xl py-3 md:py-4 px-4 md:px-6 text-lg md:text-xl font-bold text-white focus:outline-none focus:border-cyber-lime/40 transition-all"
                   />
-                  <span className="absolute right-4 md:right-6 top-1/2 -translate-y-1/2 text-[8px] md:text-[10px] font-black text-[#ccff00] uppercase tracking-widest">$PATH</span>
+                  <span className="absolute right-4 md:right-6 top-1/2 -translate-y-1/2 text-[8px] md:text-[10px] font-black text-cyber-lime uppercase tracking-widest">$PATH</span>
                 </div>
 
                 <button 
                   onClick={handleTransfer}
                   disabled={isTransferring || transferAmount <= 0 || transferAmount > progress.tokenBalance}
-                  className="w-full md:w-auto px-8 md:px-10 py-4 md:py-5 bg-white text-black font-black uppercase tracking-widest text-[8px] md:text-[10px] rounded-xl md:rounded-2xl hover:bg-[#ccff00] hover:scale-105 active:scale-95 transition-all shadow-xl disabled:opacity-20"
+                  className="w-full md:w-auto px-8 md:px-10 py-4 md:py-5 bg-white text-black font-black uppercase tracking-widest text-[8px] md:text-[10px] rounded-xl md:rounded-2xl hover:bg-cyber-lime hover:scale-105 active:scale-95 transition-all shadow-xl disabled:opacity-20"
                 >
                   {isTransferring ? <><i className="fa-solid fa-spinner animate-spin mr-2"></i> Initializing...</> : 'Initialize Bridge'}
                 </button>

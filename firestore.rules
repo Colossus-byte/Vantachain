@@ -1,0 +1,57 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: {userId} (matches Firebase Auth UID)
+    // Fields:
+    //   - username: string (required)
+    //   - onboarded: boolean (required)
+    //   - tokenBalance: number
+    //   - currentTopicId: string
+    //   - currentSubtopicIndex: number
+    //   - avatarUrl: string
+    //   - bio: string
+    //   - did: string
+    //   - walletAddress: string
+    //   - isPro: boolean
+    //   - isPrivate: boolean
+    //   - aiSentinelAccess: boolean
+    //   - vantaRank: number
+    //   - language: string
+    //   - guild: string
+    //
+    // ===============================================================
+
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAny(['username', 'onboarded']) &&
+             (data.username is string && data.username.size() <= 100) &&
+             (data.onboarded is bool) &&
+             (!('bio' in data) || (data.bio is string && data.bio.size() <= 1000)) &&
+             (!('avatarUrl' in data) || (data.avatarUrl is string && data.avatarUrl.size() <= 500)) &&
+             (!('did' in data) || (data.did is string && data.did.size() <= 100)) &&
+             (!('walletAddress' in data) || (data.walletAddress is string && data.walletAddress.size() <= 100));
+    }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUser(request.resource.data);
+      allow update: if isOwner(userId) && isValidUser(request.resource.data);
+      allow delete: if false; // Users cannot delete their own profile directly for now
+    }
+  }
+}

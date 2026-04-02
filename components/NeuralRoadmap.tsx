@@ -1,4 +1,5 @@
 import React from 'react';
+import ReactMarkdown from 'react-markdown';
 import { Recommendation } from '../types';
 import { motion } from 'motion/react';
 
@@ -11,7 +12,7 @@ interface NeuralRoadmapProps {
 const NeuralRoadmap: React.FC<NeuralRoadmapProps> = ({ recommendation, onNavigate, isLoading }) => {
   if (isLoading || !recommendation) {
     return (
-      <div className="p-8 md:p-12 rounded-[3rem] bg-[#080810] border border-indigo-500/20 relative overflow-hidden animate-pulse">
+      <div className="p-8 md:p-12 rounded-[3rem] bg-surface border border-indigo-500/20 relative overflow-hidden animate-pulse">
         <div className="flex flex-col lg:flex-row gap-12 items-center">
           <div className="flex-1 space-y-8">
             <div className="flex items-center gap-4">
@@ -31,7 +32,7 @@ const NeuralRoadmap: React.FC<NeuralRoadmapProps> = ({ recommendation, onNavigat
   }
 
   return (
-    <div className="p-8 md:p-12 rounded-[3rem] bg-[#080810] border border-indigo-500/20 relative overflow-hidden group">
+    <div className="p-8 md:p-12 rounded-[3rem] bg-surface border border-indigo-500/20 relative overflow-hidden group">
       {/* Background Glows */}
       <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/5 blur-[100px] pointer-events-none"></div>
       <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-500/5 blur-[100px] pointer-events-none"></div>
@@ -58,9 +59,9 @@ const NeuralRoadmap: React.FC<NeuralRoadmapProps> = ({ recommendation, onNavigat
             
             <div className="space-y-3">
               <h4 className="text-xl font-black text-white uppercase tracking-tight">{recommendation.title}</h4>
-              <p className="text-sm text-slate-400 leading-relaxed italic">
-                "{recommendation.rationale}"
-              </p>
+              <div className="text-sm text-slate-400 leading-relaxed italic markdown-content">
+                <ReactMarkdown>{"\"" + recommendation.rationale + "\""}</ReactMarkdown>
+              </div>
             </div>
 
             <div className="flex items-center gap-6 pt-4 border-t border-white/5">
@@ -96,7 +97,7 @@ const NeuralRoadmap: React.FC<NeuralRoadmapProps> = ({ recommendation, onNavigat
           <div className="relative z-10 space-y-4 text-center">
             <div className="w-20 h-20 rounded-[2rem] bg-indigo-500 mx-auto flex items-center justify-center text-white shadow-2xl shadow-indigo-500/40 relative">
               <i className="fa-solid fa-microchip text-3xl"></i>
-              <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-4 border-[#080810] animate-pulse"></div>
+              <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-4 border-surface animate-pulse"></div>
             </div>
             <div className="space-y-1">
               <p className="text-[10px] font-black text-white uppercase tracking-widest">NODE_SYNC</p>

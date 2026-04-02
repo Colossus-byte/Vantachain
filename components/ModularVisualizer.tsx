@@ -12,7 +12,7 @@ const ModularVisualizer: React.FC = () => {
   ];
 
   return (
-    <div className="mt-24 p-12 rounded-[3rem] bg-[#0c0e14] border border-emerald-500/10 relative overflow-hidden group">
+    <div className="mt-24 p-12 rounded-[3rem] bg-surface border border-emerald-500/10 relative overflow-hidden group">
       <div className="absolute top-0 left-0 w-64 h-64 bg-emerald-500/5 blur-[100px] pointer-events-none"></div>
       
       <div className="relative z-10">

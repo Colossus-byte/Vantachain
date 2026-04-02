@@ -22,7 +22,7 @@ const CertificationHub: React.FC<CertificationHubProps> = ({ progress }) => {
   };
 
   return (
-    <div className="mt-12 md:mt-24 p-6 md:p-12 rounded-[2.5rem] md:rounded-[3.5rem] bg-gradient-to-br from-[#0c0e14] to-[#050608] border border-amber-500/20 relative overflow-hidden group">
+    <div className="mt-12 md:mt-24 p-6 md:p-12 rounded-[2.5rem] md:rounded-[3.5rem] bg-gradient-to-br from-surface to-surface border border-amber-500/20 relative overflow-hidden group">
       <div className="absolute top-0 right-0 w-64 md:w-96 h-64 md:h-96 bg-amber-500/[0.03] blur-[80px] md:blur-[120px] pointer-events-none"></div>
       
       <div className="relative z-10">

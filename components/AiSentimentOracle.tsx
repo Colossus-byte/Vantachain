@@ -1,8 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
 import { GoogleGenAI } from "@google/genai";
+import { useTerminology } from '../hooks/useTerminology';
 
 const AiSentimentOracle: React.FC = () => {
+  const { Term } = useTerminology();
   const [narratives, setNarratives] = useState([
     { id: 'zk', name: 'ZK-Privacy', sentiment: 88, trend: 'up' },
     { id: 'ai', name: 'AI Agents', sentiment: 94, trend: 'up' },
@@ -36,15 +39,15 @@ const AiSentimentOracle: React.FC = () => {
   };
 
   return (
-    <div className="p-6 md:p-8 rounded-2xl md:rounded-[2.5rem] bg-[#050608] border border-[#8b5cf6]/20 relative overflow-hidden group">
-      <div className="absolute top-0 left-0 w-24 md:w-32 h-24 md:h-32 bg-[#8b5cf6]/5 blur-2xl md:blur-3xl"></div>
+    <div className="p-6 md:p-8 rounded-2xl md:rounded-[2.5rem] bg-surface border border-electric-violet/20 relative overflow-hidden group">
+      <div className="absolute top-0 left-0 w-24 md:w-32 h-24 md:h-32 bg-electric-violet/5 blur-2xl md:blur-3xl"></div>
       
       <div className="flex items-center justify-between mb-6 md:mb-8">
         <div className="flex items-center gap-2 md:gap-3">
-          <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-[#8b5cf6]/10 flex items-center justify-center text-[#8b5cf6]">
+          <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-electric-violet/10 flex items-center justify-center text-electric-violet">
             <i className="fa-solid fa-wand-sparkles text-xs md:text-sm"></i>
           </div>
-          <h4 className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Vanta AI Sentinel</h4>
+          <h4 className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.3em] text-slate-500"><Term term="Neural Network Analytics" /></h4>
         </div>
         <button 
           onClick={refreshSentiment}
@@ -66,7 +69,7 @@ const AiSentimentOracle: React.FC = () => {
             </div>
             <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
               <div 
-                className="h-full bg-gradient-to-r from-[#8b5cf6] to-[#ccff00] transition-all duration-1000" 
+                className="h-full bg-gradient-to-r from-electric-violet to-cyber-lime transition-all duration-1000" 
                 style={{ width: `${n.sentiment}%` }}
               ></div>
             </div>
@@ -79,9 +82,9 @@ const AiSentimentOracle: React.FC = () => {
           <i className="fa-solid fa-brain text-4xl md:text-5xl"></i>
         </div>
         <p className="text-[6px] md:text-[7px] font-black text-slate-600 uppercase tracking-widest mb-1.5 md:mb-2">Tactical Directive:</p>
-        <p className="text-[9px] md:text-[10px] text-slate-300 font-medium leading-relaxed italic">
-          "{directive}"
-        </p>
+        <div className="text-[9px] md:text-[10px] text-slate-300 font-medium leading-relaxed italic markdown-content">
+          <ReactMarkdown>{"\"" + directive + "\""}</ReactMarkdown>
+        </div>
       </div>
       
       <p className="mt-6 md:mt-8 text-[7px] md:text-[8px] font-bold text-slate-600 uppercase tracking-widest text-center">

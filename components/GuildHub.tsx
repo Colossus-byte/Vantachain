@@ -48,7 +48,7 @@ const GuildHub: React.FC<GuildHubProps> = ({ progress, onJoinGuild }) => {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-12">
           <div className="lg:col-span-8 space-y-6 md:space-y-8">
-            <div className="p-8 md:p-12 rounded-[2.5rem] md:rounded-[3.5rem] bg-[#0c0e14] border border-white/5 relative overflow-hidden">
+            <div className="p-8 md:p-12 rounded-[2.5rem] md:rounded-[3.5rem] bg-surface border border-white/5 relative overflow-hidden">
                <div className={`absolute top-0 right-0 w-48 md:w-64 h-48 md:h-64 bg-${currentGuild.color}-500/5 blur-[80px] md:blur-[100px]`}></div>
                <h4 className="text-[8px] md:text-[10px] font-black text-slate-500 uppercase tracking-widest mb-6 md:mb-8">Faction Consensus Dashboard</h4>
                <div className="space-y-8 md:space-y-10">

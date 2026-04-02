@@ -38,7 +38,7 @@ const Quiz: React.FC<QuizProps> = ({ questions, onComplete, onCancel }) => {
     const passed = score >= questions.length * 0.7;
     return (
       <div className="cyber-panel p-8 md:p-16 rounded-[2.5rem] md:rounded-[3.5rem] text-center max-w-2xl mx-auto animate-in zoom-in-95 duration-700">
-        <div className={`w-16 md:w-24 h-16 md:h-24 rounded-full mx-auto mb-6 md:mb-10 flex items-center justify-center text-2xl md:text-4xl shadow-2xl ${passed ? 'bg-[#ccff00] text-black shadow-[#ccff00]/20' : 'bg-[#ff0055] text-white shadow-[#ff0055]/20'}`}>
+        <div className={`w-16 md:w-24 h-16 md:h-24 rounded-full mx-auto mb-6 md:mb-10 flex items-center justify-center text-2xl md:text-4xl shadow-2xl ${passed ? 'bg-cyber-lime text-black shadow-cyber-lime/20' : 'bg-neon-rose text-white shadow-neon-rose/20'}`}>
           <i className={`fa-solid ${passed ? 'fa-check-double' : 'fa-xmark'}`}></i>
         </div>
         <h2 className="text-3xl md:text-5xl font-bold text-white mb-4 md:mb-6 tracking-tighter uppercase italic">{passed ? 'VALIDATION SUCCESS' : 'SYNC FAILED'}</h2>
@@ -46,7 +46,7 @@ const Quiz: React.FC<QuizProps> = ({ questions, onComplete, onCancel }) => {
           Your knowledge proof resulted in {score}/{questions.length} successful nodes validated.
         </p>
         <div className="flex flex-col sm:flex-row gap-4">
-          <button onClick={() => onComplete(score, questions.length)} className="flex-1 py-4 md:py-5 bg-[#ccff00] text-black font-bold uppercase tracking-widest text-[8px] md:text-xs rounded-xl md:rounded-2xl hover:scale-[1.02] transition-all">Record Attestation</button>
+          <button onClick={() => onComplete(score, questions.length)} className="flex-1 py-4 md:py-5 bg-cyber-lime text-black font-bold uppercase tracking-widest text-[8px] md:text-xs rounded-xl md:rounded-2xl hover:scale-[1.02] transition-all">Record Attestation</button>
           {!passed && <button onClick={onCancel} className="flex-1 py-4 md:py-5 bg-white/5 border border-white/10 text-white font-bold uppercase tracking-widest text-[8px] md:text-xs rounded-xl md:rounded-2xl hover:bg-white/10">Re-Initialize Nodes</button>}
         </div>
       </div>
@@ -58,7 +58,7 @@ const Quiz: React.FC<QuizProps> = ({ questions, onComplete, onCancel }) => {
       <div className="flex justify-between items-center mb-8 md:mb-12">
         <span className="terminal-text text-[8px] md:text-[10px] uppercase tracking-[0.4em]">Validation Protocol 0{currentIndex + 1}</span>
         <div className="h-1 w-24 md:w-32 bg-white/5 rounded-full overflow-hidden">
-          <div className="h-full bg-[#ccff00] transition-all duration-1000" style={{ width: `${((currentIndex + 1) / questions.length) * 100}%` }}></div>
+          <div className="h-full bg-cyber-lime transition-all duration-1000" style={{ width: `${((currentIndex + 1) / questions.length) * 100}%` }}></div>
         </div>
       </div>
 
@@ -68,8 +68,8 @@ const Quiz: React.FC<QuizProps> = ({ questions, onComplete, onCancel }) => {
         {current.options.map((opt, i) => {
           let state = "border-white/5 bg-white/[0.02] hover:bg-white/[0.05] text-slate-400";
           if (showExplanation) {
-            if (i === current.correctAnswerIndex) state = "bg-[#ccff00]/10 border-[#ccff00] text-[#ccff00]";
-            else if (i === selected) state = "bg-[#ff0055]/10 border-[#ff0055] text-[#ff0055]";
+            if (i === current.correctAnswerIndex) state = "bg-cyber-lime/10 border-cyber-lime text-cyber-lime";
+            else if (i === selected) state = "bg-neon-rose/10 border-neon-rose text-neon-rose";
             else state = "opacity-30 border-white/5 text-slate-600";
           }
           return (

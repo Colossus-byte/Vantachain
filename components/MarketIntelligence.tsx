@@ -22,7 +22,7 @@ const MarketIntelligence: React.FC<MarketIntelligenceProps> = ({ language }) => 
   }, [language]);
 
   return (
-    <div className="p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem] bg-[#0c0e12] border border-white/[0.03] overflow-hidden relative group">
+    <div className="p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem] bg-surface border border-white/[0.03] overflow-hidden relative group">
       <div className="absolute top-0 right-0 w-24 md:w-32 h-24 md:h-32 bg-emerald-500/[0.03] blur-3xl pointer-events-none"></div>
       
       <div className="flex items-center justify-between mb-4 md:mb-6">

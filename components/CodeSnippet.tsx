@@ -77,19 +77,19 @@ const CodeSnippet: React.FC<CodeSnippetProps> = ({ code, language }) => {
   const lines = currentCode.split('\n');
 
   return (
-    <div className="my-8 md:my-14 rounded-2xl md:rounded-3xl bg-[#08080c] border border-white/5 overflow-hidden shadow-2xl relative group/editor">
+    <div className="my-8 md:my-14 rounded-2xl md:rounded-3xl bg-surface border border-white/5 overflow-hidden shadow-2xl relative group/editor">
       {/* Header / Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between px-4 md:px-8 py-4 md:py-5 bg-white/[0.03] border-b border-white/5 backdrop-blur-md gap-4">
         <div className="flex items-center gap-3 md:gap-5">
           <div className="flex gap-1.5 md:gap-2">
-            <div className="w-2 h-2 md:w-2.5 md:h-2.5 rounded-full bg-[#ff0055]/50"></div>
-            <div className="w-2 h-2 md:w-2.5 md:h-2.5 rounded-full bg-[#fbbf24]/50"></div>
-            <div className="w-2 h-2 md:w-2.5 md:h-2.5 rounded-full bg-[#ccff00]/50"></div>
+            <div className="w-2 h-2 md:w-2.5 md:h-2.5 rounded-full bg-neon-rose/50"></div>
+            <div className="w-2 h-2 md:w-2.5 md:h-2.5 rounded-full bg-hyper-gold/50"></div>
+            <div className="w-2 h-2 md:w-2.5 md:h-2.5 rounded-full bg-cyber-lime/50"></div>
           </div>
           <div className="h-3 md:h-4 w-px bg-white/10 mx-1"></div>
           <div className="flex flex-col">
             <span className="terminal-text text-[8px] md:text-[10px] font-black uppercase tracking-[0.3em] flex items-center gap-2">
-              <i className="fa-solid fa-terminal text-[10px] md:text-xs text-[#ccff00]"></i>
+              <i className="fa-solid fa-terminal text-[10px] md:text-xs text-cyber-lime"></i>
               {language} SHELL_v8
             </span>
             <div className="flex items-center gap-2 mt-1">
@@ -98,7 +98,7 @@ const CodeSnippet: React.FC<CodeSnippetProps> = ({ code, language }) => {
                 Sandbox Active (Safe)
               </span>
               {isModified && (
-                <span className="text-[6px] md:text-[7px] font-black text-[#fbbf24] uppercase tracking-widest flex items-center gap-1">
+                <span className="text-[6px] md:text-[7px] font-black text-hyper-gold uppercase tracking-widest flex items-center gap-1">
                   <i className="fa-solid fa-pen-nib"></i>
                   Modified
                 </span>
@@ -129,8 +129,8 @@ const CodeSnippet: React.FC<CodeSnippetProps> = ({ code, language }) => {
             disabled={isRunning}
             className={`h-8 md:h-10 px-4 md:px-6 rounded-xl md:rounded-2xl font-black text-[8px] md:text-[10px] uppercase tracking-widest transition-all disabled:opacity-50 flex items-center gap-2 md:gap-3 ${
                 isRunning 
-                ? 'bg-[#fbbf24]/10 text-[#fbbf24] border border-[#fbbf24]/30' 
-                : 'bg-[#ccff00] text-black shadow-lg shadow-[#ccff00]/10 hover:scale-[1.05] active:scale-95'
+                ? 'bg-hyper-gold/10 text-hyper-gold border border-hyper-gold/30' 
+                : 'bg-cyber-lime text-black shadow-lg shadow-cyber-lime/10 hover:scale-[1.05] active:scale-95'
             }`}
           >
             {isRunning ? (
@@ -160,7 +160,7 @@ const CodeSnippet: React.FC<CodeSnippetProps> = ({ code, language }) => {
               value={currentCode}
               onChange={(e) => setCurrentCode(e.target.value)}
               spellCheck={false}
-              className="w-full h-full bg-transparent p-6 md:p-8 font-mono text-xs md:text-[15px] text-slate-300 focus:outline-none resize-none leading-[1.6em] custom-scrollbar selection:bg-[#ccff00]/20"
+              className="w-full h-full bg-transparent p-6 md:p-8 font-mono text-xs md:text-[15px] text-slate-300 focus:outline-none resize-none leading-[1.6em] custom-scrollbar selection:bg-cyber-lime/20"
               placeholder="Enter code to simulate..."
             />
             {/* Logo Watermark */}
@@ -172,15 +172,15 @@ const CodeSnippet: React.FC<CodeSnippetProps> = ({ code, language }) => {
 
       {/* Console Area */}
       {output && (
-        <div className="p-6 md:p-8 bg-[#050508] border-t border-white/5 animate-in slide-in-from-top-4 duration-500">
+        <div className="p-6 md:p-8 bg-surface border-t border-white/5 animate-in slide-in-from-top-4 duration-500">
           <div className="flex items-center justify-between mb-4 md:mb-5">
             <div className="flex items-center gap-2 md:gap-3">
-                <div className="w-1 md:w-1.5 h-1 md:h-1.5 rounded-full bg-[#ccff00] shadow-[0_0_8px_#ccff00]"></div>
+                <div className="w-1 md:w-1.5 h-1 md:h-1.5 rounded-full bg-cyber-lime shadow-[0_0_8px_#ccff00]"></div>
                 <span className="terminal-text text-[8px] md:text-[9px] font-black uppercase tracking-[0.4em]">EVM Node Trace</span>
             </div>
             <span className="text-[7px] md:text-[8px] font-black text-slate-700 uppercase tracking-widest">ProcessID: {Math.floor(Math.random()*9000)+1000}</span>
           </div>
-          <pre className="font-mono text-[11px] md:text-[13px] text-[#ccff00]/80 leading-relaxed whitespace-pre-wrap border-l-2 border-[#ccff00]/20 pl-6 md:pl-8 py-2 md:py-3 bg-[#ccff00]/[0.02] rounded-r-2xl">
+          <pre className="font-mono text-[11px] md:text-[13px] text-cyber-lime/80 leading-relaxed whitespace-pre-wrap border-l-2 border-cyber-lime/20 pl-6 md:pl-8 py-2 md:py-3 bg-cyber-lime/[0.02] rounded-r-2xl">
             {output}
           </pre>
         </div>
@@ -188,7 +188,7 @@ const CodeSnippet: React.FC<CodeSnippetProps> = ({ code, language }) => {
 
       {/* AI Audit Area */}
       {auditResult && (
-        <div className="p-6 md:p-10 bg-[#080810] border-t border-indigo-500/20 animate-in slide-in-from-bottom-4 duration-700">
+        <div className="p-6 md:p-10 bg-surface border-t border-indigo-500/20 animate-in slide-in-from-bottom-4 duration-700">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 md:mb-10">
             <div className="flex items-center gap-4 md:gap-6">
               <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">

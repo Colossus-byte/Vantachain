@@ -26,14 +26,38 @@ import NotificationSystem from './components/NotificationSystem';
 import Manifesto from './components/Manifesto';
 import ZkPrivacyCloak from './components/ZkPrivacyCloak';
 import AiSentimentOracle from './components/AiSentimentOracle';
-import VantaAtlas from './components/VantaAtlas';
+import ClarixAtlas from './components/ClarixAtlas';
+import ClarixHero from './components/ClarixHero';
+import ProFeatureWrapper from './components/ProFeatureWrapper';
+import InvestorsPage from './components/InvestorsPage';
+import MarketDemo from './components/MarketDemo';
+import SignupPage from './components/SignupPage';
+import WalletSummaryCard from './components/WalletSummaryCard';
+import CrossChainPortfolio from './components/CrossChainPortfolio';
+import { NewbieModeProvider } from './contexts/NewbieModeContext';
+import NewbieToggle from './components/NewbieToggle';
+import LearningModeBanner from './components/LearningModeBanner';
+import { useTerminology } from './hooks/useTerminology';
 import { TOPICS, UI_TRANSLATIONS, DEFAULT_AVATARS } from './constants';
 import { UserProgress, QuizQuestion, Language, Guild, P2PMessage, P2PTransaction, ProtocolNotification, Recommendation } from './types';
 import { generateQuiz, generatePathRecommendation } from './services/geminiService';
+import { FirebaseProvider, useFirebase } from './contexts/FirebaseContext';
+import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { auth, db } from './firebase';
 
-const App: React.FC = () => {
-  const [progress, setProgress] = useState<UserProgress>(() => {
-    const saved = localStorage.getItem('vantachain_v1_state');
+const AppContent: React.FC = () => {
+  const { t: tTerm, Term } = useTerminology();
+  const [currentPath, setCurrentPath] = useState(window.location.pathname);
+  const { user, isAuthReady, progress: firebaseProgress, updateProgress } = useFirebase();
+
+  useEffect(() => {
+    const handleLocationChange = () => setCurrentPath(window.location.pathname);
+    window.addEventListener('popstate', handleLocationChange);
+    return () => window.removeEventListener('popstate', handleLocationChange);
+  }, []);
+
+  const [localProgress, setLocalProgress] = useState<UserProgress>(() => {
+    const saved = localStorage.getItem('clarix_v1_state');
     if (saved) return JSON.parse(saved);
     return { 
       completedSubtopics: [], 
@@ -62,7 +86,22 @@ const App: React.FC = () => {
     };
   });
 
-  const [activeView, setActiveView] = useState<'academy' | 'certification' | 'institutional' | 'guilds' | 'governance' | 'peers' | 'profile'>('academy');
+  const progress = (user && firebaseProgress) ? firebaseProgress : localProgress;
+
+  const setProgress = (updater: Partial<UserProgress> | ((prev: UserProgress) => UserProgress)) => {
+    if (user) {
+      const baseProgress = firebaseProgress || localProgress;
+      const newProgress = typeof updater === 'function' ? updater(baseProgress) : { ...baseProgress, ...updater };
+      updateProgress(newProgress);
+    } else {
+      setLocalProgress(prev => {
+        const newProgress = typeof updater === 'function' ? updater(prev) : { ...prev, ...updater };
+        return newProgress;
+      });
+    }
+  };
+
+  const [activeView, setActiveView] = useState<'academy' | 'certification' | 'institutional' | 'guilds' | 'governance' | 'peers' | 'profile' | 'market' | 'portfolio'>('academy');
   const [isQuizMode, setIsQuizMode] = useState(false);
   const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
   const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
@@ -73,7 +112,8 @@ const App: React.FC = () => {
   const [isGeneratingRecommendation, setIsGeneratingRecommendation] = useState(false);
 
   useEffect(() => {
-    localStorage.setItem('vantachain_v1_state', JSON.stringify(progress));
+    const storageKey = progress.did ? `clarix_v1_state_${progress.did}` : 'clarix_v1_state';
+    localStorage.setItem(storageKey, JSON.stringify(progress));
   }, [progress]);
 
   const addNotification = (title: string, message: string, type: ProtocolNotification['type'] = 'info') => {
@@ -166,17 +206,95 @@ const App: React.FC = () => {
   const togglePro = () => {
     setProgress(p => {
       const newState = !p.isPro;
-      addNotification('Institutional Calibration', newState ? 'Vanta Pro Activated' : 'Standard Node Active', 'success');
+      addNotification('Institutional Calibration', newState ? 'Clarix Pro Activated' : 'Standard Node Active', 'success');
       return { ...p, isPro: newState };
     });
   };
+
+  if (currentPath === '/investors') {
+    return <InvestorsPage />;
+  }
+
+  if (currentPath === '/signup') {
+    return <SignupPage 
+      onSignup={async () => {
+        try {
+          const provider = new GoogleAuthProvider();
+          const result = await signInWithPopup(auth, provider);
+          const email = result.user.email || '';
+          
+          // Check if user document already exists
+          const { getDoc, doc } = await import('firebase/firestore');
+          const docRef = doc(db, 'users', result.user.uid);
+          const docSnap = await getDoc(docRef);
+          
+          if (!docSnap.exists()) {
+            // New user, initialize their progress
+            const newProgress = {
+              ...localProgress,
+              onboarded: true,
+              isPro: false,
+              username: email.split('@')[0] || 'NewUser'
+            };
+            updateProgress(newProgress);
+          }
+          
+          window.history.pushState({}, '', '/dashboard');
+          window.dispatchEvent(new PopStateEvent('popstate'));
+        } catch (error) {
+          console.error("Error signing in with Google", error);
+        }
+      }} 
+      onWalletConnect={(address) => {
+        const did = `did:ethr:${address}`;
+        const saved = localStorage.getItem(`clarix_v1_state_${did}`);
+        if (saved) {
+          setProgress(JSON.parse(saved));
+        } else {
+          setProgress(p => ({
+            ...p,
+            onboarded: true,
+            isPro: false,
+            walletAddress: address,
+            did,
+            username: 'Web3User'
+          }));
+        }
+        window.history.pushState({}, '', '/dashboard');
+        window.dispatchEvent(new PopStateEvent('popstate'));
+      }}
+    />;
+  }
+
+  const isLanding = currentPath === '/' || currentPath === '';
+
+  if (isLanding && !progress.onboarded) {
+    return (
+      <div className="min-h-screen bg-surface flex flex-col relative">
+        <div className="absolute top-4 right-4 md:top-8 md:right-8 z-50 flex items-center gap-4">
+          <NewbieToggle />
+          <button 
+            onClick={() => {
+              window.history.pushState({}, '', '/signup');
+              window.dispatchEvent(new PopStateEvent('popstate'));
+            }}
+            className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-full font-bold text-xs uppercase tracking-widest transition-all backdrop-blur-sm"
+          >
+            Launch App
+          </button>
+        </div>
+        <ClarixHero />
+        <MarketDemo />
+      </div>
+    );
+  }
 
   if (!progress.onboarded) return <Onboarding onComplete={finishOnboarding} />;
 
   const t = UI_TRANSLATIONS[progress.language] || UI_TRANSLATIONS[Language.EN];
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-[#020205] text-[#e2e8f0] relative">
+    <div className="flex h-screen w-full overflow-hidden bg-void text-slate-200 relative">
       {showManifesto && <Manifesto onClose={() => setShowManifesto(false)} />}
       
       <div className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-[55] transition-opacity duration-300 md:hidden ${isSidebarOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} onClick={() => setIsSidebarOpen(false)}></div>
@@ -212,14 +330,24 @@ const App: React.FC = () => {
             </button>
 
             <div onClick={() => setActiveView('profile')} className="flex items-center gap-2 md:gap-4 cursor-pointer group">
-              <div className={`w-8 h-8 md:w-12 md:h-12 rounded-full border-2 overflow-hidden transition-all duration-500 ${progress.isPrivate ? 'border-[#8b5cf6] blur-sm' : 'border-[#ccff00]/30 group-hover:border-[#ccff00]'}`}>
+              <div className={`w-8 h-8 md:w-12 md:h-12 rounded-full border-2 overflow-hidden transition-all duration-500 ${progress.isPrivate ? 'border-electric-violet blur-sm' : 'border-cyber-lime/30 group-hover:border-cyber-lime'}`}>
                 <img src={progress.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
               </div>
               <div className="hidden sm:block">
                 <p className="terminal-text text-[8px] md:text-[10px] uppercase tracking-widest mb-0.5 md:mb-1 opacity-50">Identity Proxy</p>
-                <h2 className="text-white font-bold tracking-tighter text-xs md:text-sm uppercase group-hover:text-[#ccff00] transition-colors">
+                <h2 className="text-white font-bold tracking-tighter text-xs md:text-sm uppercase group-hover:text-cyber-lime transition-colors flex items-center gap-2">
                   {progress.isPrivate ? 'ZK_ENTITY_ANON' : progress.username}
+                  {progress.did && (
+                    <span className="bg-cyber-lime/20 text-cyber-lime px-1.5 py-0.5 rounded text-[8px] tracking-widest border border-cyber-lime/30 flex items-center gap-1">
+                      <i className="fa-solid fa-check-circle"></i> Verified User
+                    </span>
+                  )}
                 </h2>
+                {progress.walletAddress && (
+                  <p className="text-blue-500 text-[10px] font-mono mt-0.5 bg-blue-500/10 px-1.5 py-0.5 rounded w-fit border border-blue-500/20">
+                    {progress.walletAddress.slice(0, 6)}...{progress.walletAddress.slice(-4)}
+                  </p>
+                )}
               </div>
             </div>
             <div className="hidden md:block h-8 w-px bg-white/10"></div>
@@ -232,17 +360,37 @@ const App: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-3 md:gap-8">
+            <div className="hidden sm:block">
+              <NewbieToggle />
+            </div>
             <div className="flex items-center gap-2 md:gap-4 bg-white/5 px-3 md:px-6 py-1.5 md:py-3 rounded-full border border-white/10">
-              <i className="fa-solid fa-coins text-[#ccff00] text-[10px] md:text-base"></i>
+              <i className="fa-solid fa-coins text-cyber-lime text-[10px] md:text-base"></i>
               <span className="text-xs md:text-lg font-bold text-white tracking-tighter">{progress.tokenBalance.toLocaleString()} <span className="text-[7px] md:text-[10px] text-slate-500">$PATH</span></span>
             </div>
           </div>
         </header>
 
+        {!progress.isPro && (
+          <div className="w-full bg-[#0f172a] border-b border-hyper-gold/20 px-4 py-3 flex flex-col sm:flex-row items-center justify-center gap-4 text-center z-30 relative shrink-0">
+            <p className="text-sm text-slate-300">
+              <span className="font-bold text-white">You're on the Free Plan</span> — Upgrade to Pro for full AI signals and advanced analytics
+            </p>
+            <button 
+              onClick={togglePro}
+              className="px-4 py-1.5 rounded-full bg-hyper-gold hover:bg-amber-400 text-[#0f172a] font-bold text-xs uppercase tracking-widest transition-all shadow-[0_0_15px_rgba(245,158,11,0.3)] shrink-0"
+            >
+              Upgrade Now
+            </button>
+          </div>
+        )}
+
         <div className="flex-1 w-full max-w-6xl mx-auto px-4 md:px-12 py-6 md:py-16">
           {activeView === 'academy' && (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 md:gap-16">
               <div className="lg:col-span-12 space-y-12">
+                {progress.walletAddress && (
+                  <WalletSummaryCard address={progress.walletAddress} />
+                )}
                 {!isQuizMode && (recommendation || isGeneratingRecommendation) && (
                   <NeuralRoadmap 
                     recommendation={recommendation} 
@@ -250,7 +398,7 @@ const App: React.FC = () => {
                     isLoading={isGeneratingRecommendation}
                   />
                 )}
-                {!isQuizMode && <VantaAtlas progress={progress} onSelectTopic={(id) => setProgress(p => ({ ...p, currentTopicId: id, currentSubtopicIndex: 0 }))} />}
+                {!isQuizMode && <ClarixAtlas progress={progress} onSelectTopic={(id) => setProgress(p => ({ ...p, currentTopicId: id, currentSubtopicIndex: 0 }))} />}
               </div>
               
               <div className="lg:col-span-8">
@@ -262,7 +410,7 @@ const App: React.FC = () => {
                       <span className="px-2 md:px-3 py-1 bg-white/5 border border-white/10 rounded-lg text-[8px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                         {currentTopic.difficulty} BLOCK
                       </span>
-                      <span className="text-[8px] md:text-[10px] font-bold text-[#8b5cf6] uppercase tracking-[0.2em]">{currentTopic.category}</span>
+                      <span className="text-[8px] md:text-[10px] font-bold text-electric-violet uppercase tracking-[0.2em]">{currentTopic.category}</span>
                     </div>
 
                     <h1 className="text-4xl md:text-7xl font-bold text-white mb-8 md:mb-12 tracking-tighter leading-none">{currentSubtopic.title}</h1>
@@ -274,7 +422,7 @@ const App: React.FC = () => {
                       <button 
                         onClick={handleNext}
                         disabled={isGeneratingQuiz}
-                        className="w-full sm:w-auto px-8 md:px-16 py-4 md:py-6 bg-[#ccff00] text-black font-black uppercase tracking-widest text-[10px] md:text-xs rounded-2xl md:rounded-3xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-4"
+                        className="w-full sm:w-auto px-8 md:px-16 py-4 md:py-6 bg-cyber-lime text-black font-black uppercase tracking-widest text-[10px] md:text-xs rounded-2xl md:rounded-3xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-4"
                       >
                         {isGeneratingQuiz ? 'Forging Block...' : progress.currentSubtopicIndex === currentTopic.subtopics.length - 1 ? 'Proof of Knowledge' : 'Sync Next Node'}
                         <i className="fa-solid fa-chevron-right text-[8px] md:text-[10px]"></i>
@@ -294,8 +442,10 @@ const App: React.FC = () => {
                 {!isQuizMode && (
                   <>
                     <ZkPrivacyCloak isActive={progress.isPrivate} onToggle={togglePrivacy} />
-                    <AiSentimentOracle />
-                    <PortfolioTracker progress={progress} />
+                    <ProFeatureWrapper isPro={progress.isPro} featureName={tTerm("Neural Network Analytics")} onUpgrade={togglePro}>
+                      <AiSentimentOracle />
+                    </ProFeatureWrapper>
+                    <PortfolioTracker progress={progress} onUpdate={(u) => setProgress(p => ({ ...p, ...u }))} />
                     <SkillSpider metrics={progress.metrics} />
                   </>
                 )}
@@ -303,19 +453,44 @@ const App: React.FC = () => {
             </div>
           )}
 
+          {activeView === 'market' && (
+            <ProFeatureWrapper isPro={progress.isPro} featureName={tTerm("Market Intelligence Feed")} onUpgrade={togglePro}>
+              <MarketDemo progress={progress} onUpdate={(u) => setProgress(p => ({ ...p, ...u }))} />
+            </ProFeatureWrapper>
+          )}
+          {activeView === 'portfolio' && (
+            <CrossChainPortfolio 
+              walletAddress={progress.walletAddress} 
+              onConnectWallet={() => {}} 
+            />
+          )}
           {activeView === 'peers' && <PeerNexus progress={progress} onSendMessage={() => {}} onSendTokens={() => {}} />}
-          {activeView === 'institutional' && <InstitutionalPortal isPro={progress.isPro} onTogglePro={togglePro} />}
+          {activeView === 'institutional' && (
+            <ProFeatureWrapper isPro={progress.isPro} featureName="Institutional Portal" onUpgrade={togglePro}>
+              <InstitutionalPortal isPro={true} onTogglePro={togglePro} />
+            </ProFeatureWrapper>
+          )}
           {activeView === 'guilds' && <GuildHub progress={progress} onJoinGuild={(g) => setProgress(p => ({ ...p, guild: g }))} />}
           {activeView === 'governance' && <GovernanceForum progress={progress} onVote={() => {}} />}
           {activeView === 'certification' && <CertificationHub progress={progress} />}
           {activeView === 'profile' && <ProfileView progress={progress} onUpdate={(u) => setProgress(p => ({ ...p, ...u }))} />}
         </div>
+
+        {/* IPFS Footer Badge */}
+        <div className="w-full py-4 flex justify-center items-center border-t border-white/5 bg-black/20 mt-auto shrink-0">
+          <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10">
+            <i className="fa-solid fa-cube text-blue-500 text-[10px]"></i>
+            <span className="text-[8px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+              Powered by IPFS — Decentralized Storage
+            </span>
+          </div>
+        </div>
       </main>
 
       <div 
         onClick={() => setIsAiOpen(!isAiOpen)}
-        className={`fixed right-6 md:left-12 bottom-6 md:bottom-12 w-14 h-14 md:w-16 md:h-16 rounded-2xl flex items-center justify-center cursor-pointer transition-all duration-500 z-[100] ${
-          isAiOpen ? 'bg-white text-black scale-90' : 'bg-[#8b5cf6] text-white shadow-[0_0_30px_rgba(139,92,246,0.4)] hover:scale-110'
+        className={`fixed right-6 md:left-12 bottom-6 md:bottom-12 w-14 h-14 md:w-16 md:h-16 rounded-2xl flex items-center justify-center cursor-pointer transition-all duration-500 z-[50] ${
+          isAiOpen ? 'bg-white text-black scale-90' : 'bg-electric-violet text-white shadow-[0_0_30px_rgba(139,92,246,0.4)] hover:scale-110'
         }`}
       >
         <i className={`fa-solid ${isAiOpen ? 'fa-xmark' : 'fa-brain-circuit'} text-lg md:text-xl`}></i>
@@ -323,6 +498,17 @@ const App: React.FC = () => {
 
       <AIAssistant isOpen={isAiOpen} onClose={() => setIsAiOpen(false)} currentContext={currentSubtopic.content} language={progress.language} />
     </div>
+  );
+};
+
+const App: React.FC = () => {
+  return (
+    <FirebaseProvider>
+      <NewbieModeProvider>
+        <AppContent />
+        <LearningModeBanner />
+      </NewbieModeProvider>
+    </FirebaseProvider>
   );
 };
 

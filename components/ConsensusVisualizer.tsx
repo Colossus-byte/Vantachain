@@ -5,7 +5,7 @@ const ConsensusVisualizer: React.FC = () => {
   const [mode, setMode] = useState<'linear' | 'dag'>('linear');
 
   return (
-    <div className="mt-12 md:mt-24 p-6 md:p-12 rounded-[2.5rem] md:rounded-[3rem] bg-[#0c0e14] border border-amber-500/10 relative overflow-hidden group">
+    <div className="mt-12 md:mt-24 p-6 md:p-12 rounded-[2.5rem] md:rounded-[3rem] bg-surface border border-amber-500/10 relative overflow-hidden group">
       <div className="absolute top-0 left-0 w-48 md:w-64 h-48 md:h-64 bg-amber-500/5 blur-[80px] md:blur-[100px] pointer-events-none"></div>
       
       <div className="relative z-10">

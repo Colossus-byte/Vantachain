@@ -130,6 +130,10 @@ export interface UserProgress {
   // Privacy & AI narrative fields
   isPrivate: boolean;
   aiSentinelAccess: boolean;
+  walletAddress?: string;
+  did?: string;
+  ipfsWatchlistCid?: string;
+  ipfsPortfolioCid?: string;
 }
 
 export interface Recommendation {

@@ -1,7 +1,9 @@
 
 import React, { useState, useMemo } from 'react';
+import { useTerminology } from '../hooks/useTerminology';
 
 const DeFiSimulator: React.FC = () => {
+  const { Term } = useTerminology();
   const [priceChange, setPriceChange] = useState(50); // -100% to +400%
   const [tradingVolume, setTradingVolume] = useState(25); 
 
@@ -18,7 +20,7 @@ const DeFiSimulator: React.FC = () => {
   }, [priceChange, tradingVolume]);
 
   return (
-    <div className="mt-8 md:mt-24 p-6 md:p-12 rounded-[2rem] md:rounded-[3.5rem] bg-[#020205] border border-emerald-500/20 relative overflow-hidden group">
+    <div className="mt-8 md:mt-24 p-6 md:p-12 rounded-[2rem] md:rounded-[3.5rem] bg-void border border-emerald-500/20 relative overflow-hidden group">
       <div className="absolute top-0 right-0 w-32 md:w-96 h-32 md:h-96 bg-emerald-500/5 blur-[60px] md:blur-[120px] pointer-events-none"></div>
       
       <div className="relative z-10">
@@ -30,12 +32,12 @@ const DeFiSimulator: React.FC = () => {
                   <i className="fa-solid fa-chart-area text-lg md:text-xl"></i>
                 </div>
                 <div>
-                  <h3 className="text-[7px] md:text-[10px] font-black uppercase tracking-[0.4em] text-emerald-500 mb-0.5 md:mb-1">PRO TOOL: LIQUIDITY ENGINE</h3>
+                  <h3 className="text-[7px] md:text-[10px] font-black uppercase tracking-[0.4em] text-emerald-500 mb-0.5 md:mb-1">PRO TOOL: <Term term="Liquidity" /> ENGINE</h3>
                   <p className="text-base md:text-2xl font-black text-white tracking-tighter uppercase italic">Impermanent Loss Visualizer</p>
                 </div>
               </div>
               <p className="text-[9px] md:text-sm text-slate-400 leading-relaxed font-medium italic">
-                Simulate how price volatility affects your staked assets in an AMM.
+                Simulate how price <Term term="Volatility" /> affects your staked assets in an AMM.
               </p>
             </div>
 
@@ -60,7 +62,7 @@ const DeFiSimulator: React.FC = () => {
                 <input 
                   type="range" min="0" max="100" value={tradingVolume} 
                   onChange={(e) => setTradingVolume(Number(e.target.value))}
-                  className="w-full accent-[#8b5cf6] h-1 bg-white/10 rounded-full cursor-pointer"
+                  className="w-full accent-electric-violet h-1 bg-white/10 rounded-full cursor-pointer"
                 />
               </div>
             </div>

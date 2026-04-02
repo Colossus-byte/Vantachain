@@ -51,7 +51,7 @@ const WhitepaperXRay: React.FC = () => {
   };
 
   return (
-    <div className="mt-12 md:mt-24 p-6 md:p-12 rounded-[2rem] md:rounded-[3.5rem] bg-[#0c0e12] border border-indigo-500/20 relative overflow-hidden">
+    <div className="mt-12 md:mt-24 p-6 md:p-12 rounded-[2rem] md:rounded-[3.5rem] bg-surface border border-indigo-500/20 relative overflow-hidden">
       <div className="absolute top-0 right-0 w-48 md:w-64 h-48 md:h-64 bg-indigo-500/5 blur-[80px] md:blur-[100px] pointer-events-none"></div>
       
       <div className="relative z-10">

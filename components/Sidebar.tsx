@@ -22,18 +22,19 @@ const Sidebar: React.FC<SidebarProps> = ({ progress, onSelectTopic, onSelectView
 
   const filteredTopics = TOPICS.filter(topic => 
     topic.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    topic.description.toLowerCase().includes(searchQuery.toLowerCase())
+    topic.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    topic.category.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
-    <div className="w-72 md:w-80 h-full flex flex-col bg-[#050508] border-r border-white/5 z-[60]">
+    <div className="w-72 md:w-80 h-full flex flex-col bg-surface border-r border-white/5 z-[60]">
       <div className="p-6 md:p-10 shrink-0">
         <div className="flex items-center justify-between mb-8 md:mb-16">
           <div className="flex items-center gap-3 md:gap-4">
-            <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-[#ccff00] flex items-center justify-center text-black shadow-[0_0_20px_rgba(204,255,0,0.3)]">
-              <i className="fa-solid fa-v text-lg md:text-xl"></i>
+            <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-blue-500 flex items-center justify-center text-white shadow-[0_0_20px_rgba(59,130,246,0.3)]">
+              <i className="fa-solid fa-cube text-lg md:text-xl"></i>
             </div>
-            <h1 className="text-xl md:text-2xl font-bold tracking-tighter text-white uppercase italic leading-none">VantaChain</h1>
+            <h1 className="text-xl md:text-2xl font-bold tracking-tighter text-white uppercase italic leading-none">Clarix</h1>
           </div>
           
           <div className="flex items-center gap-2">
@@ -66,6 +67,8 @@ const Sidebar: React.FC<SidebarProps> = ({ progress, onSelectTopic, onSelectView
         <nav className="space-y-2 md:space-y-3 mb-8 md:mb-12">
           {[
             { id: 'academy', label: t.academy, icon: 'fa-graduation-cap' },
+            { id: 'portfolio', label: 'Portfolio', icon: 'fa-wallet' },
+            { id: 'market', label: 'Market Intel', icon: 'fa-chart-line' },
             { id: 'peers', label: t.peers, icon: 'fa-satellite-dish' },
             { id: 'guilds', label: t.guilds, icon: 'fa-users' },
             { id: 'governance', label: t.governance, icon: 'fa-landmark' },
@@ -76,7 +79,7 @@ const Sidebar: React.FC<SidebarProps> = ({ progress, onSelectTopic, onSelectView
               key={view.id}
               onClick={() => onSelectView(view.id)}
               className={`w-full group flex items-center gap-3 md:gap-4 px-4 md:px-6 py-3 md:py-4 rounded-xl md:rounded-2xl transition-all duration-300 border ${
-                activeView === view.id ? 'bg-[#ccff00] text-black border-[#ccff00] shadow-[0_0_20px_rgba(204,255,0,0.2)]' : 'text-slate-500 border-transparent hover:bg-white/5 hover:text-white'
+                activeView === view.id ? 'bg-cyber-lime text-black border-cyber-lime shadow-[0_0_20px_rgba(204,255,0,0.2)]' : 'text-slate-500 border-transparent hover:bg-white/5 hover:text-white'
               }`}
             >
               <i className={`fa-solid ${view.icon} text-xs md:text-sm`}></i>
@@ -91,13 +94,13 @@ const Sidebar: React.FC<SidebarProps> = ({ progress, onSelectTopic, onSelectView
           <div className="py-4 md:py-6">
             <div className="px-4 mb-6">
               <div className="relative group">
-                <i className="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-600 group-focus-within:text-[#ccff00] transition-colors text-[10px]"></i>
+                <i className="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-600 group-focus-within:text-cyber-lime transition-colors text-[10px]"></i>
                 <input 
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search Atlas..."
-                  className="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 pl-9 pr-4 text-[10px] font-bold text-white placeholder:text-slate-700 focus:outline-none focus:border-[#ccff00]/30 transition-all"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 pl-9 pr-4 text-[10px] font-bold text-white placeholder:text-slate-700 focus:outline-none focus:border-cyber-lime/30 transition-all"
                 />
               </div>
             </div>
@@ -107,7 +110,8 @@ const Sidebar: React.FC<SidebarProps> = ({ progress, onSelectTopic, onSelectView
               {filteredTopics.map(topic => {
                 const isMatch = searchQuery && (
                   topic.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                  topic.description.toLowerCase().includes(searchQuery.toLowerCase())
+                  topic.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                  topic.category.toLowerCase().includes(searchQuery.toLowerCase())
                 );
 
                 return (
@@ -122,9 +126,9 @@ const Sidebar: React.FC<SidebarProps> = ({ progress, onSelectTopic, onSelectView
                           : 'text-slate-600 hover:text-slate-300 border-transparent'
                     }`}
                   >
-                    {activeTopicId === topic.id && <div className="absolute left-0 w-1 h-6 bg-[#ccff00] rounded-r-full shadow-[0_0_10px_#ccff00]"></div>}
+                    {activeTopicId === topic.id && <div className="absolute left-0 w-1 h-6 bg-cyber-lime rounded-r-full shadow-[0_0_10px_#ccff00]"></div>}
                     <div className={`w-7 h-7 md:w-8 md:h-8 rounded-lg flex items-center justify-center text-[8px] md:text-[10px] transition-all ${
-                      progress.completedTopics.includes(topic.id) ? 'bg-[#ccff00]/10 text-[#ccff00]' : 'bg-white/5'
+                      progress.completedTopics.includes(topic.id) ? 'bg-cyber-lime/10 text-cyber-lime' : 'bg-white/5'
                     }`}>
                       {progress.completedTopics.includes(topic.id) ? <i className="fa-solid fa-check"></i> : <i className="fa-solid fa-circle text-[4px]"></i>}
                     </div>
@@ -145,13 +149,13 @@ const Sidebar: React.FC<SidebarProps> = ({ progress, onSelectTopic, onSelectView
       </div>
 
       <div onClick={() => onSelectView('profile')} className="p-6 md:p-10 border-t border-white/5 flex items-center gap-3 md:gap-4 cursor-pointer hover:bg-white/[0.02] transition-colors">
-         <div className="w-8 h-8 md:w-10 md:h-10 rounded-full border border-[#ccff00]/30 overflow-hidden">
+         <div className="w-8 h-8 md:w-10 md:h-10 rounded-full border border-cyber-lime/30 overflow-hidden">
             <img src={progress.avatarUrl} alt="Me" className="w-full h-full object-cover" />
          </div>
          <div className="flex-1 min-w-0">
             <p className="text-[8px] md:text-[10px] font-black text-white uppercase tracking-tight truncate">{progress.username}</p>
             <div className="flex items-center gap-2">
-               <div className="w-1 h-1 md:w-1.5 md:h-1.5 rounded-full bg-[#ccff00] shadow-[0_0_5px_#ccff00]"></div>
+               <div className="w-1 h-1 md:w-1.5 md:h-1.5 rounded-full bg-cyber-lime shadow-[0_0_5px_#ccff00]"></div>
                <span className="text-[7px] md:text-[8px] font-bold text-slate-500 uppercase tracking-widest">{progress.tokenBalance} $PATH</span>
             </div>
          </div>

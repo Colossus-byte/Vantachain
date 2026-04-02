@@ -1,0 +1,49 @@
+{
+  "entities": {
+    "UserProgress": {
+      "title": "UserProgress",
+      "description": "Stores the user's progress, identity, and preferences in the Clarix Protocol.",
+      "type": "object",
+      "properties": {
+        "completedSubtopics": { "type": "array", "items": { "type": "string" } },
+        "completedTopics": { "type": "array", "items": { "type": "string" } },
+        "tokenBalance": { "type": "number" },
+        "currentTopicId": { "type": "string" },
+        "currentSubtopicIndex": { "type": "number" },
+        "discoveredFactIds": { "type": "array", "items": { "type": "string" } },
+        "metrics": {
+          "type": "object",
+          "properties": {
+            "cryptography": { "type": "number" },
+            "defi": { "type": "number" },
+            "security": { "type": "number" },
+            "economics": { "type": "number" }
+          }
+        },
+        "onboarded": { "type": "boolean" },
+        "achievements": { "type": "array", "items": { "type": "string" } },
+        "language": { "type": "string" },
+        "guild": { "type": "string" },
+        "votedProposalIds": { "type": "array", "items": { "type": "string" } },
+        "avatarUrl": { "type": "string" },
+        "bio": { "type": "string" },
+        "username": { "type": "string" },
+        "vantaRank": { "type": "number" },
+        "isPro": { "type": "boolean" },
+        "isPrivate": { "type": "boolean" },
+        "aiSentinelAccess": { "type": "boolean" },
+        "walletAddress": { "type": "string" },
+        "did": { "type": "string" },
+        "ipfsWatchlistCid": { "type": "string" },
+        "ipfsPortfolioCid": { "type": "string" }
+      },
+      "required": ["onboarded", "username"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProgress" },
+      "description": "Stores user profiles and progress. The document ID is the Firebase Auth UID."
+    }
+  }
+}

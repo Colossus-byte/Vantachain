@@ -17,8 +17,8 @@ const NotificationSystem: React.FC<NotificationSystemProps> = ({ notifications, 
         >
           <div className="flex gap-3 md:gap-4 items-start">
             <div className={`w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl flex items-center justify-center text-[10px] md:text-sm shrink-0 ${
-              n.type === 'success' ? 'bg-[#ccff00]/10 text-[#ccff00]' : 
-              n.type === 'signal' ? 'bg-[#8b5cf6]/10 text-[#8b5cf6]' : 'bg-white/5 text-slate-400'
+              n.type === 'success' ? 'bg-cyber-lime/10 text-cyber-lime' : 
+              n.type === 'signal' ? 'bg-electric-violet/10 text-electric-violet' : 'bg-white/5 text-slate-400'
             }`}>
               <i className={`fa-solid ${
                 n.type === 'success' ? 'fa-circle-check' : 

@@ -26,7 +26,7 @@ const NetworkCongestion: React.FC = () => {
   };
 
   return (
-    <div className="mt-12 md:mt-24 p-6 md:p-12 rounded-[2rem] md:rounded-[3.5rem] bg-[#050608] border border-amber-500/20 relative overflow-hidden group">
+    <div className="mt-12 md:mt-24 p-6 md:p-12 rounded-[2rem] md:rounded-[3.5rem] bg-surface border border-amber-500/20 relative overflow-hidden group">
       <div className="absolute top-0 right-0 w-64 md:w-96 h-64 md:h-96 bg-amber-500/5 blur-[80px] md:blur-[120px] pointer-events-none"></div>
       
       <div className="relative z-10">
@@ -43,7 +43,7 @@ const NetworkCongestion: React.FC = () => {
                 </div>
               </div>
               <p className="text-xs md:text-sm text-slate-400 leading-relaxed font-medium italic">
-                Simulate network surges and observe the exponential rise in Vanta-Gas fees.
+                Simulate network surges and observe the exponential rise in Clarix-Gas fees.
               </p>
             </div>
 

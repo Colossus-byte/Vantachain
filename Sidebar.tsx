@@ -42,7 +42,7 @@ const Sidebar: React.FC<SidebarProps> = ({ progress, onSelectTopic, onSelectView
               <i className="fa-solid fa-cube text-base"></i>
             </div>
             <div className="flex flex-col">
-              <h1 className="text-lg font-display text-white uppercase leading-none tracking-tight">CryptoPath</h1>
+              <h1 className="text-lg font-display text-white uppercase leading-none tracking-tight">Clarix</h1>
               <span className="text-[8px] text-slate-600 font-bold uppercase tracking-[0.25em] mt-1">{t.access_level}</span>
             </div>
           </div>

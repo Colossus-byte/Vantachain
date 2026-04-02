@@ -8,9 +8,9 @@ interface ZkPrivacyCloakProps {
 
 const ZkPrivacyCloak: React.FC<ZkPrivacyCloakProps> = ({ isActive, onToggle }) => {
   return (
-    <div className="p-4 md:p-6 rounded-xl md:rounded-2xl bg-[#0a0a0f] border border-white/5 flex items-center justify-between group transition-all hover:border-white/10">
+    <div className="p-4 md:p-6 rounded-xl md:rounded-2xl bg-surface border border-white/5 flex items-center justify-between group transition-all hover:border-white/10">
       <div className="flex items-center gap-3 md:gap-4">
-        <div className={`w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl flex items-center justify-center transition-all ${isActive ? 'bg-[#ccff00] text-black shadow-[0_0_20px_rgba(204,255,0,0.3)]' : 'bg-white/5 text-slate-500'}`}>
+        <div className={`w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl flex items-center justify-center transition-all ${isActive ? 'bg-cyber-lime text-black shadow-[0_0_20px_rgba(204,255,0,0.3)]' : 'bg-white/5 text-slate-500'}`}>
           <i className={`fa-solid ${isActive ? 'fa-user-secret' : 'fa-user'} text-xs md:text-sm`}></i>
         </div>
         <div>
@@ -21,7 +21,7 @@ const ZkPrivacyCloak: React.FC<ZkPrivacyCloakProps> = ({ isActive, onToggle }) =
       
       <button 
         onClick={onToggle}
-        className={`relative w-10 h-5 md:w-12 md:h-6 rounded-full transition-all ${isActive ? 'bg-[#ccff00]' : 'bg-white/10'}`}
+        className={`relative w-10 h-5 md:w-12 md:h-6 rounded-full transition-all ${isActive ? 'bg-cyber-lime' : 'bg-white/10'}`}
       >
         <div className={`absolute top-0.5 md:top-1 w-4 h-4 rounded-full bg-white transition-all ${isActive ? 'left-5.5 md:left-7 bg-black' : 'left-0.5 md:left-1'}`}></div>
       </button>

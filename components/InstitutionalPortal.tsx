@@ -56,7 +56,7 @@ const InstitutionalPortal: React.FC<InstitutionalPortalProps> = ({ isPro, onTogg
             <p className="text-[10px] font-black text-white uppercase tracking-widest">Team Sync</p>
           </div>
           <div className="p-6 rounded-3xl bg-white/[0.02] border border-white/5">
-            <i className="fa-solid fa-ranking-star text-[#ccff00] mb-4 text-xl"></i>
+            <i className="fa-solid fa-ranking-star text-cyber-lime mb-4 text-xl"></i>
             <p className="text-[10px] font-black text-white uppercase tracking-widest">Global Rank</p>
           </div>
           <div className="p-6 rounded-3xl bg-white/[0.02] border border-white/5">

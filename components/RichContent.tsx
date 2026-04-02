@@ -34,14 +34,14 @@ const RichContent: React.FC<RichContentProps> = ({ content }) => {
             const isExplicit = explicitLabels.includes(keyword);
             newResult.push(
               <span key={`${keyword}-${i}`} className="inline-flex items-center gap-1.5 group">
-                <span className="font-bold text-white border-b border-[#ccff00]/30 group-hover:border-[#ccff00] transition-colors">
+                <span className="font-bold text-white border-b border-cyber-lime/30 group-hover:border-cyber-lime transition-colors">
                   {item}
                 </span>
                 <a 
                   href={url} 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className={`text-[9px] font-black text-[#ccff00] uppercase tracking-widest hover:text-black transition-all flex items-center gap-1 px-1.5 py-0.5 rounded bg-[#ccff00]/5 border border-[#ccff00]/10 hover:bg-[#ccff00] hover:border-[#ccff00] ${isExplicit ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
+                  className={`text-[9px] font-black text-cyber-lime uppercase tracking-widest hover:text-black transition-all flex items-center gap-1 px-1.5 py-0.5 rounded bg-cyber-lime/5 border border-cyber-lime/10 hover:bg-cyber-lime hover:border-cyber-lime ${isExplicit ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
                 >
                   {isExplicit ? 'Learn More' : <i className="fa-solid fa-arrow-up-right"></i>}
                   {isExplicit && <i className="fa-solid fa-arrow-up-right text-[7px]"></i>}
@@ -83,10 +83,10 @@ const RichContent: React.FC<RichContentProps> = ({ content }) => {
               {chunk.includes('Key Takeaway') ? (
                 <div className="takeaway-card">
                   <div className="flex items-center gap-3 mb-4">
-                      <div className="w-10 h-10 rounded-2xl bg-[#ccff00]/10 flex items-center justify-center border border-[#ccff00]/20 shadow-lg shadow-[#ccff00]/5 animate-pulse">
-                          <i className="fa-solid fa-bolt-lightning text-sm text-[#ccff00]"></i>
+                      <div className="w-10 h-10 rounded-2xl bg-cyber-lime/10 flex items-center justify-center border border-cyber-lime/20 shadow-lg shadow-cyber-lime/5 animate-pulse">
+                          <i className="fa-solid fa-bolt-lightning text-sm text-cyber-lime"></i>
                       </div>
-                      <span className="text-[10px] font-black text-[#ccff00] uppercase tracking-[0.4em]">Protocol Intelligence</span>
+                      <span className="text-[10px] font-black text-cyber-lime uppercase tracking-[0.4em]">Protocol Intelligence</span>
                   </div>
                   <div className="text-white text-xl font-bold leading-relaxed tracking-tight">
                       {injectLinks(chunk.replace('💡 **Key Takeaway**', '').trim())}
@@ -95,10 +95,10 @@ const RichContent: React.FC<RichContentProps> = ({ content }) => {
               ) : chunk.includes('Pro Tip') ? (
                 <div className="pro-tip-card">
                   <div className="flex items-center gap-3 mb-4">
-                      <div className="w-10 h-10 rounded-2xl bg-[#8b5cf6]/10 flex items-center justify-center border border-[#8b5cf6]/20 shadow-lg shadow-[#8b5cf6]/5">
-                          <i className="fa-solid fa-shield-halved text-sm text-[#8b5cf6]"></i>
+                      <div className="w-10 h-10 rounded-2xl bg-electric-violet/10 flex items-center justify-center border border-electric-violet/20 shadow-lg shadow-electric-violet/5">
+                          <i className="fa-solid fa-shield-halved text-sm text-electric-violet"></i>
                       </div>
-                      <span className="text-[10px] font-black text-[#8b5cf6] uppercase tracking-[0.4em]">Security Directive</span>
+                      <span className="text-[10px] font-black text-electric-violet uppercase tracking-[0.4em]">Security Directive</span>
                   </div>
                   <div className="text-slate-300 font-medium leading-relaxed italic text-lg">
                     {injectLinks(chunk.replace('🛡️ **Pro Tip**', '').trim())}
@@ -131,10 +131,10 @@ const RichContent: React.FC<RichContentProps> = ({ content }) => {
             {chunk.includes('Key Takeaway') ? (
               <div className="takeaway-card">
                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-2xl bg-[#ccff00]/10 flex items-center justify-center border border-[#ccff00]/20 shadow-lg shadow-[#ccff00]/5 animate-pulse">
-                        <i className="fa-solid fa-bolt-lightning text-sm text-[#ccff00]"></i>
+                    <div className="w-10 h-10 rounded-2xl bg-cyber-lime/10 flex items-center justify-center border border-cyber-lime/20 shadow-lg shadow-cyber-lime/5 animate-pulse">
+                        <i className="fa-solid fa-bolt-lightning text-sm text-cyber-lime"></i>
                     </div>
-                    <span className="text-[10px] font-black text-[#ccff00] uppercase tracking-[0.4em]">Protocol Intelligence</span>
+                    <span className="text-[10px] font-black text-cyber-lime uppercase tracking-[0.4em]">Protocol Intelligence</span>
                 </div>
                 <div className="text-white text-xl font-bold leading-relaxed tracking-tight">
                     {injectLinks(chunk.replace('💡 **Key Takeaway**', '').trim())}
@@ -143,10 +143,10 @@ const RichContent: React.FC<RichContentProps> = ({ content }) => {
             ) : chunk.includes('Pro Tip') ? (
               <div className="pro-tip-card">
                 <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-2xl bg-[#8b5cf6]/10 flex items-center justify-center border border-[#8b5cf6]/20 shadow-lg shadow-[#8b5cf6]/5">
-                        <i className="fa-solid fa-shield-halved text-sm text-[#8b5cf6]"></i>
+                    <div className="w-10 h-10 rounded-2xl bg-electric-violet/10 flex items-center justify-center border border-electric-violet/20 shadow-lg shadow-electric-violet/5">
+                        <i className="fa-solid fa-shield-halved text-sm text-electric-violet"></i>
                     </div>
-                    <span className="text-[10px] font-black text-[#8b5cf6] uppercase tracking-[0.4em]">Security Directive</span>
+                    <span className="text-[10px] font-black text-electric-violet uppercase tracking-[0.4em]">Security Directive</span>
                 </div>
                 <div className="text-slate-300 font-medium leading-relaxed italic text-lg">
                   {injectLinks(chunk.replace('🛡️ **Pro Tip**', '').trim())}

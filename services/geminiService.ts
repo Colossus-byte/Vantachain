@@ -19,11 +19,11 @@ export const getTutorResponse = async (userMessage: string, context: string, his
     const chat = ai.chats.create({
       model: 'gemini-3-flash-preview',
       config: {
-        systemInstruction: `You are CryptoPath AI, an expert cryptocurrency and blockchain tutor. 
+        systemInstruction: `You are Clarix AI, an expert cryptocurrency and blockchain tutor. 
         Your goal is to help students learn based on the current context: "${context}". 
         Keep explanations clear, engaging, and accurate. 
         MANDATORY: You must respond in ${getLanguageName(language)}.
-        Use Markdown for formatting.`,
+        CRITICAL: Do NOT use excessive Markdown. Avoid bolding (**) every other word. Use plain text as much as possible. Only use lists if there are 3+ items.`,
       },
     });
 
@@ -40,7 +40,8 @@ export const fetchIntelligencePulse = async (topicTitle: string, language: Langu
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: `Provide a brief summary of the 3 most important recent news items or technical developments regarding "${topicTitle}" in the crypto industry from the last 6 months.
-      MANDATORY: You must respond in ${getLanguageName(language)}.`,
+      MANDATORY: You must respond in ${getLanguageName(language)}.
+      CRITICAL: Keep the response clean and avoid excessive bolding (**) or lists. Use plain text for summaries.`,
       config: {
         tools: [{ googleSearch: {} }],
       },
@@ -128,7 +129,7 @@ export const generateVisualPrompt = async (lessonTitle: string, lessonContent: s
       
       Requirements:
       1. Describe an abstract, futuristic 3D animation.
-      2. Use a "CryptoPath" aesthetic: Obsidian blacks, Emerald greens, and Gold accents.
+      2. Use a "Clarix" aesthetic: Deep blacks, Neon greens, and Gold accents.
       3. Focus on visual metaphors for the technical concepts described.
       4. Keep the description under 60 words.
       5. Do not use conversational filler, just the prompt text.`,

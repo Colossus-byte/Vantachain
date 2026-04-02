@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
 import { fetchIntelligencePulse } from '../services/geminiService';
 import { Language } from '../types';
 
@@ -40,8 +41,8 @@ const NewsPulse: React.FC<NewsPulseProps> = ({ topicTitle, language }) => {
         <h3 className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.4em] text-emerald-400">Live Intelligence Pulse</h3>
       </div>
       
-      <div className="prose-note text-xs md:text-sm mb-6 md:mb-8 leading-relaxed text-slate-400">
-        {pulseData.text}
+      <div className="prose-note text-xs md:text-sm mb-6 md:mb-8 leading-relaxed text-slate-400 markdown-content">
+        <ReactMarkdown>{pulseData.text}</ReactMarkdown>
       </div>
 
       <div className="flex flex-wrap gap-2 md:gap-3">

@@ -31,7 +31,7 @@ const ProtocolLab: React.FC = () => {
   };
 
   return (
-    <div className="mt-12 md:mt-24 p-6 md:p-12 rounded-[2rem] md:rounded-[3.5rem] bg-[#0a0c12] border border-emerald-500/20 relative overflow-hidden group">
+    <div className="mt-12 md:mt-24 p-6 md:p-12 rounded-[2rem] md:rounded-[3.5rem] bg-surface border border-emerald-500/20 relative overflow-hidden group">
       <div className="absolute -top-24 -left-24 w-48 md:w-64 h-48 md:h-64 bg-emerald-500/10 blur-[80px] md:blur-[100px] pointer-events-none"></div>
       
       <div className="relative z-10">

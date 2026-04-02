@@ -41,7 +41,7 @@ const NeuralFeed: React.FC<NeuralFeedProps> = ({ isPrivate }) => {
   return (
     <div className="p-6 border-t border-white/5 bg-black/20">
       <div className="flex items-center gap-3 mb-6">
-        <div className="w-1.5 h-1.5 rounded-full bg-[#ccff00] animate-pulse"></div>
+        <div className="w-1.5 h-1.5 rounded-full bg-cyber-lime animate-pulse"></div>
         <h4 className="terminal-text text-[9px] font-black uppercase tracking-[0.4em]">Neural Pulse Stream</h4>
       </div>
       
@@ -51,7 +51,7 @@ const NeuralFeed: React.FC<NeuralFeedProps> = ({ isPrivate }) => {
           return (
             <div key={e.id} className="flex flex-col gap-1 animate-in slide-in-from-left-4 duration-500">
               <div className="flex items-center justify-between">
-                <span className={`text-[10px] font-bold tracking-tight uppercase transition-all duration-500 ${isPrivate ? 'text-[#8b5cf6] blur-[2px] opacity-40' : 'text-white'}`}>
+                <span className={`text-[10px] font-bold tracking-tight uppercase transition-all duration-500 ${isPrivate ? 'text-electric-violet blur-[2px] opacity-40' : 'text-white'}`}>
                   {isPrivate ? 'ZK_PROOF_' + e.user.slice(-2) : e.user}
                 </span>
                 <span className="text-[8px] font-black text-slate-600 uppercase tracking-widest">{new Date(e.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>

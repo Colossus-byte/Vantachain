@@ -1,5 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
 import { getTutorResponse } from '../services/geminiService';
 import { ChatMessage, Language } from '../types';
 import { GoogleGenAI, Modality, LiveServerMessage } from '@google/genai';
@@ -135,7 +136,7 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ currentContext, isOpen, onClo
           speechConfig: {
             voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Zephyr' } },
           },
-          systemInstruction: `You are the CryptoPath Live Tutor. Engaging in a real-time voice conversation about crypto in ${language === Language.EN ? 'English' : language === Language.ES ? 'Spanish' : language === Language.FR ? 'French' : 'Chinese'}. Context: ${currentContext}`,
+          systemInstruction: `You are the Clarix Live Tutor. Engaging in a real-time voice conversation about crypto in ${language === Language.EN ? 'English' : language === Language.ES ? 'Spanish' : language === Language.FR ? 'French' : 'Chinese'}. Context: ${currentContext}`,
         }
       });
 
@@ -149,7 +150,7 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ currentContext, isOpen, onClo
   if (!isOpen) return null;
 
   return (
-    <div className={`fixed right-0 md:right-8 bottom-0 md:bottom-28 w-full md:w-[420px] h-full md:h-[650px] glass-panel rounded-none md:rounded-[2.5rem] flex flex-col z-[100] animate-in slide-in-from-bottom md:slide-in-from-right-8 fade-in duration-300`}>
+    <div className={`fixed right-0 md:right-8 bottom-0 md:bottom-28 w-full md:w-[420px] h-full md:h-[650px] glass-panel rounded-none md:rounded-[2.5rem] flex flex-col z-[110] animate-in slide-in-from-bottom md:slide-in-from-right-8 fade-in duration-300`}>
       <div className="p-5 md:p-7 border-b border-white/5 flex items-center justify-between">
         <div className="flex items-center gap-3 md:gap-4">
           <div className="w-10 h-10 md:w-11 md:h-11 rounded-xl md:rounded-2xl bg-white/5 flex items-center justify-center text-emerald-400 border border-white/10">
@@ -192,10 +193,12 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ currentContext, isOpen, onClo
         ) : (
           messages.map((msg, idx) => (
             <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[90%] md:max-w-[88%] p-4 md:p-5 rounded-2xl md:rounded-3xl leading-relaxed ${
-                msg.role === 'user' ? 'bg-emerald-600 text-white rounded-tr-none' : 'bg-white/5 text-slate-200 rounded-tl-none border border-white/5'
+              <div className={`max-w-[90%] md:max-w-[88%] p-4 md:p-5 rounded-2xl md:rounded-3xl leading-relaxed shadow-lg ${
+                msg.role === 'user' ? 'bg-emerald-600 text-white rounded-tr-none' : 'bg-slate-800/80 text-slate-100 rounded-tl-none border border-white/10'
               }`}>
-                {msg.text}
+                <div className="markdown-content">
+                  <ReactMarkdown>{msg.text}</ReactMarkdown>
+                </div>
               </div>
             </div>
           ))
@@ -212,16 +215,16 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ currentContext, isOpen, onClo
       </div>
 
       {!isLiveMode && (
-        <div className="p-4 md:p-5 pb-8 md:pb-5">
+        <div className="p-4 md:p-6 pb-8 md:pb-6 bg-black/60 border-t border-white/5 backdrop-blur-md">
           <form onSubmit={handleSend} className="relative group">
             <input
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Ask anything..."
-              className="w-full bg-black/40 border border-white/10 rounded-2xl md:rounded-[2rem] py-4 md:py-5 pl-5 md:pl-7 pr-14 md:pr-16 focus:outline-none focus:border-emerald-500/30 transition-all text-xs md:text-sm"
+              className="w-full bg-surface border border-white/20 rounded-2xl md:rounded-[2rem] py-4 md:py-5 pl-5 md:pl-7 pr-14 md:pr-16 focus:outline-none focus:border-emerald-500 transition-all text-xs md:text-sm text-white placeholder:text-slate-500 shadow-inner"
             />
-            <button type="submit" className="absolute right-2 md:right-2.5 top-1/2 -translate-y-1/2 w-9 h-9 md:w-11 md:h-11 rounded-full bg-emerald-500 text-black flex items-center justify-center shadow-lg">
+            <button type="submit" className="absolute right-2 md:right-2.5 top-1/2 -translate-y-1/2 w-9 h-9 md:w-11 md:h-11 rounded-full bg-emerald-500 text-black flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-transform">
               <i className="fa-solid fa-arrow-up text-base md:text-lg"></i>
             </button>
           </form>

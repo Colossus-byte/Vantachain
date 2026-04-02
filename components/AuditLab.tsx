@@ -19,7 +19,7 @@ const AuditLab: React.FC = () => {
   };
 
   return (
-    <div className="mt-8 md:mt-24 p-6 md:p-12 rounded-[2rem] md:rounded-[3.5rem] bg-[#0c0e14] border border-rose-500/20 relative overflow-hidden">
+    <div className="mt-8 md:mt-24 p-6 md:p-12 rounded-[2rem] md:rounded-[3.5rem] bg-surface border border-rose-500/20 relative overflow-hidden">
       <div className="absolute top-0 right-0 w-32 md:w-64 h-32 md:h-64 bg-rose-500/5 blur-[60px] md:blur-[100px] pointer-events-none"></div>
       
       <div className="relative z-10">
