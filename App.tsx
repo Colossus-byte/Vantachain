@@ -44,13 +44,14 @@ import { generateQuiz, generatePathRecommendation } from './services/claudeServi
 import { FirebaseProvider, useFirebase } from './contexts/FirebaseContext';
 import WalletConnectModal from './components/WalletConnectModal';
 import { WalletState, watchWalletChanges, checkExistingConnection } from './services/walletService';
-import { addDoc, collection, doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { addDoc, collection, doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from './firebase';
 import LevelCompletionCelebration from './components/LevelCompletionCelebration';
 import LessonTutor from './components/LessonTutor';
 import ActivityFeed from './components/ActivityFeed';
 import GuildLeaderboard from './components/GuildLeaderboard';
 import StreakBadge from './components/StreakBadge';
+import AdminPage from './components/AdminPage';
 
 const AppContent: React.FC = () => {
   const { t: tTerm, Term } = useTerminology();
@@ -145,6 +146,7 @@ const handleWalletConnected = (wallet: WalletState) => {
     walletAddress: wallet.address,
     did,
   }));
+  registerWallet(wallet.address, progress.username);
   addNotification(
     'Wallet Connected',
     `${wallet.chainName} · ${wallet.address.slice(0, 6)}...${wallet.address.slice(-4)}`,
@@ -247,8 +249,23 @@ useEffect(() => {
         xp: newXP,
         guild: progress.guild,
         streak: progress.streak,
+        completedLessons: progress.completedSubtopics.length,
         updatedAt: serverTimestamp(),
       }, { merge: true });
+    } catch { /* non-critical */ }
+  };
+
+  const registerWallet = async (address: string, username: string) => {
+    try {
+      const docRef = doc(db, 'wallet_registrations', address.toLowerCase());
+      const snap = await getDoc(docRef);
+      if (!snap.exists()) {
+        await setDoc(docRef, {
+          address: address.toLowerCase(),
+          connectedAt: serverTimestamp(),
+          username,
+        });
+      }
     } catch { /* non-critical */ }
   };
 
@@ -356,10 +373,15 @@ useEffect(() => {
     return <InvestorsPage />;
   }
 
+  if (currentPath === '/admin') {
+    return <AdminPage />;
+  }
+
   if (currentPath === '/signup') {
     return <SignupPage
       onWalletConnect={(address) => {
         const did = `did:ethr:${address}`;
+        registerWallet(address, 'Web3User');
         try {
           const saved = localStorage.getItem(`clarix_v1_state_${did}`);
           if (saved) {

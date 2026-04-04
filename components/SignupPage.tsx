@@ -2,12 +2,6 @@ import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { connectWalletConnect, connectCoinbase } from '../services/walletService';
 
-declare global {
-  interface Window {
-    ethereum?: any;
-  }
-}
-
 interface SignupPageProps {
   onWalletConnect: (address: string) => void;
 }
@@ -16,36 +10,20 @@ const SignupPage: React.FC<SignupPageProps> = ({ onWalletConnect }) => {
   const [isConnecting, setIsConnecting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const handleWalletConnect = async (walletType: string) => {
+  const handleWalletConnect = async (walletType: 'walletconnect' | 'coinbase') => {
     setErrorMsg(null);
     setIsConnecting(true);
-    
     try {
-      if (walletType === 'metamask') {
-        if (typeof window.ethereum !== 'undefined' && window.ethereum.request) {
-          const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-          if (accounts && accounts.length > 0) {
-            onWalletConnect(accounts[0]);
-          } else {
-            setErrorMsg("No accounts found. Please unlock MetaMask.");
-          }
-        } else {
-          setErrorMsg("MetaMask is not installed. Please install it to use this feature.");
-          setTimeout(() => window.open('https://metamask.io/download/', '_blank'), 2000);
-        }
-      } else if (walletType === 'walletconnect') {
-        const wallet = await connectWalletConnect();
-        onWalletConnect(wallet.address);
-      } else if (walletType === 'coinbase') {
-        const wallet = await connectCoinbase();
-        onWalletConnect(wallet.address);
-      }
+      const wallet = walletType === 'walletconnect'
+        ? await connectWalletConnect()
+        : await connectCoinbase();
+      onWalletConnect(wallet.address);
     } catch (error: any) {
-      console.error("Wallet connection error:", error);
+      console.error('Wallet connection error:', error);
       if (error?.code === 4001 || error?.message?.includes('User rejected')) {
-        setErrorMsg("Connection request was rejected.");
+        setErrorMsg('Connection request was rejected.');
       } else {
-        setErrorMsg(`Failed to connect ${walletType}. Please try again.`);
+        setErrorMsg(`Failed to connect. Please try again.`);
       }
     } finally {
       setIsConnecting(false);
@@ -78,28 +56,19 @@ const SignupPage: React.FC<SignupPageProps> = ({ onWalletConnect }) => {
         )}
 
         <div className="space-y-3">
-          <button 
-            onClick={() => handleWalletConnect('metamask')}
-            disabled={isConnecting}
-            className="w-full py-3 px-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-hyper-gold/50 text-white font-bold text-sm transition-all flex items-center justify-center gap-3 disabled:opacity-50"
-          >
-            <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" alt="MetaMask" className="w-5 h-5" />
-            Continue with MetaMask
-          </button>
-          
-          <button 
-            onClick={() => handleWalletConnect('walletconnect')}
+          <button
+            onClick={() => handleWalletConnect('walletconnect' as const)}
             disabled={isConnecting}
             className="w-full py-3 px-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-[#3b99fc]/50 text-white font-bold text-sm transition-all flex items-center justify-center gap-3 disabled:opacity-50"
           >
             <div className="w-5 h-5 rounded-full bg-[#3b99fc] flex items-center justify-center">
               <i className="fa-solid fa-link text-white text-xs"></i>
             </div>
-            WalletConnect
+            WalletConnect <span className="text-slate-500 font-normal">(MetaMask, Rainbow &amp; more)</span>
           </button>
 
           <button 
-            onClick={() => handleWalletConnect('coinbase')}
+            onClick={() => handleWalletConnect('coinbase' as const)}
             disabled={isConnecting}
             className="w-full py-3 px-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-[#0052ff]/50 text-white font-bold text-sm transition-all flex items-center justify-center gap-3 disabled:opacity-50"
           >

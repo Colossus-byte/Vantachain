@@ -85,5 +85,18 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isOwner(userId);
     }
+
+    // ── Wallet Registrations ──────────────────────────────────────────────────
+    // Written once on first wallet connection. Public read for admin dashboard.
+    // Doc ID = lowercase wallet address. Updates blocked (first-registration wins).
+    match /wallet_registrations/{address} {
+      allow create: if request.resource.data.keys().hasOnly(['address', 'connectedAt', 'username']) &&
+                       request.resource.data.address is string &&
+                       request.resource.data.address.size() <= 42 &&
+                       request.resource.data.username is string &&
+                       request.resource.data.username.size() <= 100;
+      allow read: if true;
+      allow update, delete: if false;
+    }
   }
 }
