@@ -1,6 +1,141 @@
 
 import { Topic, Difficulty, DidYouKnow, Achievement, Language, Guild, Proposal, Peer } from './types';
 
+export interface CredentialDef {
+  id: string;
+  slug: string;
+  name: string;
+  subtitle: string;
+  description: string;
+  icon: string;
+  colorClass: string;        // tailwind text color
+  bgClass: string;           // tailwind bg color/gradient (for earned card)
+  borderClass: string;       // tailwind border color
+  glowClass: string;         // box-shadow style value
+  tier: 'level' | 'bonus';
+  requirementText: string;
+  levelTopicId?: string;     // topic ID that awards this credential on completion
+}
+
+export const CREDENTIAL_DEFS: CredentialDef[] = [
+  {
+    id: 'crypto-foundations',
+    slug: 'crypto-foundations',
+    name: 'Crypto Foundations',
+    subtitle: 'Level 1 Certificate',
+    description: 'Demonstrates foundational knowledge of cryptocurrency, blockchain mechanics, and safe wallet usage.',
+    icon: 'fa-seedling',
+    colorClass: 'text-blue-400',
+    bgClass: 'from-blue-600 via-blue-500 to-cyan-400',
+    borderClass: 'border-blue-500/40',
+    glowClass: '0 0 40px rgba(59,130,246,0.35)',
+    tier: 'level',
+    requirementText: 'Complete Level 1: Getting Started',
+    levelTopicId: 'b1',
+  },
+  {
+    id: 'market-navigator',
+    slug: 'market-navigator',
+    name: 'Market Navigator',
+    subtitle: 'Level 2 Certificate',
+    description: 'Certified understanding of market dynamics, exchanges, chart reading, and DCA strategies.',
+    icon: 'fa-compass',
+    colorClass: 'text-emerald-400',
+    bgClass: 'from-emerald-600 via-emerald-500 to-green-400',
+    borderClass: 'border-emerald-500/40',
+    glowClass: '0 0 40px rgba(16,185,129,0.35)',
+    tier: 'level',
+    requirementText: 'Complete Level 2: Your First Steps',
+    levelTopicId: 'f1',
+  },
+  {
+    id: 'defi-practitioner',
+    slug: 'defi-practitioner',
+    name: 'DeFi Practitioner',
+    subtitle: 'Level 3 Certificate',
+    description: 'Advanced proficiency in decentralized finance, yield protocols, liquidity, and smart contracts.',
+    icon: 'fa-code-branch',
+    colorClass: 'text-violet-400',
+    bgClass: 'from-violet-600 via-purple-500 to-fuchsia-400',
+    borderClass: 'border-violet-500/40',
+    glowClass: '0 0 40px rgba(139,92,246,0.35)',
+    tier: 'level',
+    requirementText: 'Complete Level 3: Going Deeper',
+    levelTopicId: 'm1',
+  },
+  {
+    id: 'protocol-architect',
+    slug: 'protocol-architect',
+    name: 'Protocol Architect',
+    subtitle: 'Level 4 Certificate',
+    description: 'Expert-level mastery of blockchain protocols, institutional trading strategies, and on-chain governance.',
+    icon: 'fa-crown',
+    colorClass: 'text-amber-400',
+    bgClass: 'from-amber-500 via-yellow-400 to-orange-400',
+    borderClass: 'border-amber-400/40',
+    glowClass: '0 0 40px rgba(245,158,11,0.35)',
+    tier: 'level',
+    requirementText: 'Complete Level 4: Smart Investor Strategies',
+    levelTopicId: 'p1',
+  },
+  {
+    id: 'streak-7',
+    slug: 'streak-7',
+    name: '7-Day Streak',
+    subtitle: 'Consistency Award',
+    description: 'Awarded for maintaining a 7-day consecutive learning streak on Clarix Protocol.',
+    icon: 'fa-fire',
+    colorClass: 'text-orange-400',
+    bgClass: 'from-orange-600 via-orange-500 to-red-400',
+    borderClass: 'border-orange-500/40',
+    glowClass: '0 0 40px rgba(249,115,22,0.35)',
+    tier: 'bonus',
+    requirementText: 'Maintain a 7-day learning streak',
+  },
+  {
+    id: 'streak-30',
+    slug: 'streak-30',
+    name: '30-Day Streak',
+    subtitle: 'Dedication Award',
+    description: 'Exceptional dedication — 30 consecutive days of learning on Clarix Protocol.',
+    icon: 'fa-fire-flame-curved',
+    colorClass: 'text-rose-400',
+    bgClass: 'from-rose-600 via-rose-500 to-pink-400',
+    borderClass: 'border-rose-500/40',
+    glowClass: '0 0 40px rgba(244,63,94,0.35)',
+    tier: 'bonus',
+    requirementText: 'Maintain a 30-day learning streak',
+  },
+  {
+    id: 'portfolio-analyst',
+    slug: 'portfolio-analyst',
+    name: 'Portfolio Analyst',
+    subtitle: 'Explorer Award',
+    description: 'First to analyze a wallet portfolio using the Clarix cross-chain intelligence engine.',
+    icon: 'fa-chart-pie',
+    colorClass: 'text-cyan-400',
+    bgClass: 'from-cyan-600 via-cyan-500 to-teal-400',
+    borderClass: 'border-cyan-500/40',
+    glowClass: '0 0 40px rgba(6,182,212,0.35)',
+    tier: 'bonus',
+    requirementText: 'Run your first portfolio analysis',
+  },
+  {
+    id: 'governance-pioneer',
+    slug: 'governance-pioneer',
+    name: 'Governance Pioneer',
+    subtitle: 'Participation Award',
+    description: 'Cast the first vote in Clarix DAO governance, helping shape the future of the protocol.',
+    icon: 'fa-landmark-dome',
+    colorClass: 'text-yellow-400',
+    bgClass: 'from-yellow-600 via-amber-500 to-yellow-400',
+    borderClass: 'border-yellow-500/40',
+    glowClass: '0 0 40px rgba(234,179,8,0.35)',
+    tier: 'bonus',
+    requirementText: 'Cast your first governance vote',
+  },
+];
+
 export const LANGUAGES = [
   { code: Language.EN, name: 'English', flag: '🇺🇸' },
   { code: Language.ES, name: 'Español', flag: '🇪🇸' },

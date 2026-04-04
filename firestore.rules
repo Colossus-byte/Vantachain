@@ -52,6 +52,36 @@ service cloud.firestore {
       allow create: if isOwner(userId) && isValidUser(request.resource.data);
       allow update: if isOwner(userId) && isValidUser(request.resource.data);
       allow delete: if false; // Users cannot delete their own profile directly for now
+
+      // ── User credentials sub-collection ─────────────────────────────────────
+      // Private to the owner. Credential IDs are known slugs (no arbitrary IDs).
+      match /credentials/{credentialId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) &&
+                         request.resource.data.keys().hasAll(['id', 'earnedAt', 'verificationHash']) &&
+                         request.resource.data.id is string &&
+                         request.resource.data.id.size() <= 64 &&
+                         request.resource.data.earnedAt is number &&
+                         request.resource.data.verificationHash is string &&
+                         request.resource.data.verificationHash.size() <= 128;
+        allow update, delete: if false; // Credentials are immutable once earned
+      }
+    }
+
+    // ── Public credentials ────────────────────────────────────────────────────
+    // Doc ID: {walletAddress}_{credentialSlug}. Anyone can read; only owner can create.
+    match /public_credentials/{docId} {
+      allow read: if true;
+      allow create: if isAuthenticated() &&
+                       request.resource.data.keys().hasAll(['walletAddress', 'credentialName', 'earnedAt', 'verificationHash']) &&
+                       request.resource.data.walletAddress is string &&
+                       request.resource.data.walletAddress.size() <= 42 &&
+                       request.resource.data.credentialName is string &&
+                       request.resource.data.credentialName.size() <= 100 &&
+                       request.resource.data.earnedAt is number &&
+                       request.resource.data.verificationHash is string &&
+                       request.resource.data.verificationHash.size() <= 128;
+      allow update, delete: if false; // Immutable for integrity
     }
 
     // ── Waitlist ─────────────────────────────────────────────────────────────

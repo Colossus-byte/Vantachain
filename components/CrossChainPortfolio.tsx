@@ -21,6 +21,7 @@ interface TokenHolding {
 interface CrossChainPortfolioProps {
   walletAddress?: string;
   onConnectWallet: () => void;
+  onFirstAnalysis?: () => void;
 }
 
 const COLORS = {
@@ -30,13 +31,14 @@ const COLORS = {
   Solana: '#14F195',
 };
 
-export default function CrossChainPortfolio({ walletAddress, onConnectWallet }: CrossChainPortfolioProps) {
+export default function CrossChainPortfolio({ walletAddress, onConnectWallet, onFirstAnalysis }: CrossChainPortfolioProps) {
   const { isNewbieMode } = useNewbieMode();
   const [addressInput, setAddressInput] = useState(walletAddress || '');
   const [isFetching, setIsFetching] = useState(false);
   const [holdings, setHoldings] = useState<TokenHolding[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [usingMockData, setUsingMockData] = useState(false);
+  const [hasAnalyzed, setHasAnalyzed] = useState(false);
 
   // Sync input with prop
   useEffect(() => {
@@ -158,6 +160,11 @@ export default function CrossChainPortfolio({ walletAddress, onConnectWallet }: 
       } else {
         setUsingMockData(false);
         setHoldings(fetchedHoldings.map(enrichWithLivePrice));
+        // Fire first-analysis callback once
+        if (!hasAnalyzed) {
+          setHasAnalyzed(true);
+          onFirstAnalysis?.();
+        }
       }
 
     } catch (err) {

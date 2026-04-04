@@ -38,7 +38,7 @@ import { NewbieModeProvider } from './contexts/NewbieModeContext';
 import NewbieToggle from './components/NewbieToggle';
 import LearningModeBanner from './components/LearningModeBanner';
 import { useTerminology } from './hooks/useTerminology';
-import { TOPICS, UI_TRANSLATIONS, DEFAULT_AVATARS } from './constants';
+import { TOPICS, UI_TRANSLATIONS, DEFAULT_AVATARS, PROPOSALS, CREDENTIAL_DEFS, CredentialDef } from './constants';
 import { UserProgress, QuizQuestion, Language, Guild, P2PMessage, P2PTransaction, ProtocolNotification, Recommendation } from './types';
 import { generateQuiz, generatePathRecommendation } from './services/claudeService';
 import { FirebaseProvider, useFirebase } from './contexts/FirebaseContext';
@@ -52,6 +52,8 @@ import ActivityFeed from './components/ActivityFeed';
 import GuildLeaderboard from './components/GuildLeaderboard';
 import StreakBadge from './components/StreakBadge';
 import AdminPage from './components/AdminPage';
+import CredentialCelebration from './components/CredentialCelebration';
+import VerifyPage from './components/VerifyPage';
 
 const AppContent: React.FC = () => {
   const { t: tTerm, Term } = useTerminology();
@@ -101,6 +103,7 @@ const [walletState, setWalletState] = useState<WalletState | null>(null);
       streak: 0,
       lastActiveDate: '',
       longestStreak: 0,
+      earnedCredentialIds: [],
     };
   });
 
@@ -171,6 +174,12 @@ const handleWalletDisconnected = () => {
   const [isGeneratingRecommendation, setIsGeneratingRecommendation] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
   const [celebrationData, setCelebrationData] = useState<{ topicTitle: string; xpEarned: number; tokensEarned: number; nextTopicTitle?: string } | null>(null);
+  const [showCredentialCelebration, setShowCredentialCelebration] = useState(false);
+  const [credentialCelebrationData, setCredentialCelebrationData] = useState<{
+    def: CredentialDef; earnedAt: number; verificationHash: string;
+  } | null>(null);
+  // Credential queued to show AFTER the level celebration dismisses
+  const [pendingCredentialId, setPendingCredentialId] = useState<string | null>(null);
 
   useEffect(() => {
     const storageKey = progress.did ? `clarix_v1_state_${progress.did}` : 'clarix_v1_state';
@@ -269,6 +278,70 @@ useEffect(() => {
     } catch { /* non-critical */ }
   };
 
+  const awardCredential = async (credentialId: string, showImmediately = true) => {
+    // Don't re-award
+    if ((progress.earnedCredentialIds || []).includes(credentialId)) return;
+    const def = CREDENTIAL_DEFS.find(c => c.id === credentialId);
+    if (!def) return;
+
+    const earnedAt = Date.now();
+    let verificationHash = 'unverified';
+    try {
+      const raw = `${progress.walletAddress || user?.uid || 'anon'}-${credentialId}-${earnedAt}`;
+      const hashBuf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(raw));
+      verificationHash = Array.from(new Uint8Array(hashBuf))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('')
+        .slice(0, 32);
+    } catch { /* crypto not available */ }
+
+    // Update local progress immediately
+    setProgress(p => ({
+      ...p,
+      earnedCredentialIds: [...(p.earnedCredentialIds || []), credentialId],
+    }));
+
+    // Write to Firestore user subcollection
+    if (user) {
+      try {
+        await setDoc(doc(db, 'users', user.uid, 'credentials', credentialId), {
+          id: credentialId,
+          earnedAt,
+          verificationHash,
+          walletAddress: progress.walletAddress ?? null,
+          username: progress.username,
+          credentialName: def.name,
+        });
+      } catch { /* non-critical */ }
+    }
+
+    // Write to public_credentials for verification page
+    if (progress.walletAddress) {
+      try {
+        await setDoc(
+          doc(db, 'public_credentials', `${progress.walletAddress.toLowerCase()}_${credentialId}`),
+          {
+            walletAddress: progress.walletAddress.toLowerCase(),
+            credentialName: def.name,
+            username: progress.username,
+            earnedAt,
+            verificationHash,
+            uid: user?.uid ?? null,
+          }
+        );
+      } catch { /* non-critical */ }
+    }
+
+    addNotification('Credential Earned!', `You've earned the "${def.name}" credential!`, 'success');
+
+    if (showImmediately) {
+      setCredentialCelebrationData({ def, earnedAt, verificationHash });
+      setShowCredentialCelebration(true);
+    } else {
+      setPendingCredentialId(credentialId);
+    }
+  };
+
   const handleNext = () => {
     const isLastSubtopic = progress.currentSubtopicIndex === currentTopic.subtopics.length - 1;
 
@@ -280,6 +353,16 @@ useEffect(() => {
       const newCompleted = [...new Set([...prev.completedSubtopics, currentSubtopic.id])];
       const updates = { ...streakUpdates, xp: newXP, completedSubtopics: newCompleted };
       writeLeaderboard(newXP);
+
+      // Check streak credentials based on the NEW streak value
+      const newStreak = streakUpdates.streak;
+      const earned = prev.earnedCredentialIds || [];
+      if (newStreak >= 7 && !earned.includes('streak-7')) {
+        setTimeout(() => awardCredential('streak-7'), 500);
+      } else if (newStreak >= 30 && !earned.includes('streak-30')) {
+        setTimeout(() => awardCredential('streak-30'), 500);
+      }
+
       return isLastSubtopic
         ? { ...prev, ...updates }
         : { ...prev, ...updates, currentSubtopicIndex: prev.currentSubtopicIndex + 1 };
@@ -321,7 +404,13 @@ useEffect(() => {
       setProgress(updatedProgress);
       writeLeaderboard(newXP);
 
-      // Trigger celebration overlay
+      // Check if a credential is awarded for completing this level
+      const credDef = CREDENTIAL_DEFS.find(c => c.levelTopicId === currentTopic.id);
+      if (credDef && !(progress.earnedCredentialIds || []).includes(credDef.id)) {
+        // Award it but show after the level celebration (queued)
+        awardCredential(credDef.id, false);
+      }
+
       setCelebrationData({
         topicTitle: currentTopic.title,
         xpEarned: XP_LEVEL_BONUS,
@@ -375,6 +464,14 @@ useEffect(() => {
 
   if (currentPath === '/admin') {
     return <AdminPage />;
+  }
+
+  if (currentPath.startsWith('/verify/')) {
+    const parts = currentPath.split('/').filter(Boolean);
+    // parts: ['verify', walletAddress, credentialSlug]
+    const walletAddr = parts[1] ?? '';
+    const credSlug = parts[2] ?? '';
+    return <VerifyPage walletAddress={walletAddr} credentialSlug={credSlug} />;
   }
 
   if (currentPath === '/signup') {
@@ -449,6 +546,7 @@ useEffect(() => {
 />
 
       {showManifesto && <Manifesto onClose={() => setShowManifesto(false)} />}
+
       {celebrationData && (
         <LevelCompletionCelebration
           isVisible={showCelebration}
@@ -456,9 +554,41 @@ useEffect(() => {
           xpEarned={celebrationData.xpEarned}
           tokensEarned={celebrationData.tokensEarned}
           nextTopicTitle={celebrationData.nextTopicTitle}
-          onDismiss={() => setShowCelebration(false)}
+          onDismiss={() => {
+            setShowCelebration(false);
+            // After level celebration, show queued credential celebration if any
+            if (pendingCredentialId) {
+              const def = CREDENTIAL_DEFS.find(c => c.id === pendingCredentialId);
+              if (def) {
+                setTimeout(() => {
+                  setCredentialCelebrationData({
+                    def,
+                    earnedAt: Date.now(),
+                    verificationHash: '—',
+                  });
+                  setShowCredentialCelebration(true);
+                  setPendingCredentialId(null);
+                }, 400);
+              } else {
+                setPendingCredentialId(null);
+              }
+            }
+          }}
         />
       )}
+
+      <CredentialCelebration
+        isVisible={showCredentialCelebration}
+        credentialDef={credentialCelebrationData?.def ?? null}
+        username={progress.username}
+        walletAddress={progress.walletAddress}
+        earnedAt={credentialCelebrationData?.earnedAt ?? Date.now()}
+        verificationHash={credentialCelebrationData?.verificationHash ?? ''}
+        onDismiss={() => {
+          setShowCredentialCelebration(false);
+          setCredentialCelebrationData(null);
+        }}
+      />
       
       <div className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-[55] transition-opacity duration-300 md:hidden ${isSidebarOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} onClick={() => setIsSidebarOpen(false)}></div>
 
@@ -641,9 +771,10 @@ useEffect(() => {
             </ProFeatureWrapper>
           )}
           {activeView === 'portfolio' && (
-            <CrossChainPortfolio 
-              walletAddress={progress.walletAddress} 
-              onConnectWallet={connectWallet} 
+            <CrossChainPortfolio
+              walletAddress={progress.walletAddress}
+              onConnectWallet={connectWallet}
+              onFirstAnalysis={() => awardCredential('portfolio-analyst')}
             />
           )}
           {activeView === 'peers' && <PeerNexus progress={progress} onSendMessage={() => {}} onSendTokens={() => {}} />}
@@ -653,7 +784,22 @@ useEffect(() => {
             </ProFeatureWrapper>
           )}
           {activeView === 'guilds' && <GuildHub progress={progress} onJoinGuild={(g) => setProgress(p => ({ ...p, guild: g }))} />}
-          {activeView === 'governance' && <GovernanceForum progress={progress} onVote={() => {}} />}
+          {activeView === 'governance' && (
+            <GovernanceForum
+              progress={progress}
+              onVote={(proposalId, _support) => {
+                const isFirstVote = progress.votedProposalIds.length === 0;
+                const proposal = PROPOSALS.find(p => p.id === proposalId);
+                const cost = proposal?.pathCost ?? 100;
+                setProgress(p => ({
+                  ...p,
+                  votedProposalIds: [...p.votedProposalIds, proposalId],
+                  tokenBalance: Math.max(0, p.tokenBalance - cost),
+                }));
+                if (isFirstVote) awardCredential('governance-pioneer');
+              }}
+            />
+          )}
           {activeView === 'certification' && <CertificationHub progress={progress} />}
           {activeView === 'profile' && <ProfileView progress={progress} onUpdate={(u) => setProgress(p => ({ ...p, ...u }))} />}
         </div>

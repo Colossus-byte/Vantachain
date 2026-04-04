@@ -105,6 +105,13 @@ export interface Achievement {
   unlockedAt?: string;
 }
 
+export interface EarnedCredential {
+  id: string;
+  earnedAt: number; // ms timestamp
+  verificationHash: string;
+  walletAddress?: string;
+}
+
 export interface UserProgress {
   completedSubtopics: string[];
   completedTopics: string[];
@@ -139,6 +146,8 @@ export interface UserProgress {
   streak: number;
   lastActiveDate: string; // 'YYYY-MM-DD'
   longestStreak: number;
+  // Credentials
+  earnedCredentialIds: string[];
 }
 
 export interface Recommendation {
