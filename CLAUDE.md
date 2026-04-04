@@ -24,13 +24,17 @@ Firebase config is loaded from `firebase-applet-config.json` (not env vars).
 
 ### Firebase Authorized Domains (Google Sign-In)
 
-If Google Sign-In throws `auth/unauthorized-domain`, the app's domain must be added to Firebase:
+Google Sign-In uses `signInWithRedirect` (not `signInWithPopup`). This avoids `auth/unauthorized-domain` errors caused by third-party cookie restrictions in Safari/Firefox/Chrome when the app is served from a domain different from the Firebase `authDomain`.
+
+The redirect result is handled by a `useEffect` in `AppContent` (`App.tsx`) that calls `getRedirectResult(auth)` on mount, initialises new users in Firestore, and navigates to `/dashboard`.
+
+If `auth/unauthorized-domain` still appears, the app's domain must be added to Firebase:
 
 1. Go to [Firebase Console](https://console.firebase.google.com/) → select the project
 2. Navigate to **Authentication** → **Settings** → **Authorized domains**
-3. Click **Add domain** and enter the domain (e.g. `clarix.app`, `localhost`, or your preview URL)
+3. Click **Add domain** and enter the domain (e.g. `clarixprotocol.com`, `localhost`, or a preview URL)
 
-This must be done for every new deployment domain (production, staging, preview URLs).
+This must be done for every new deployment domain. The `authDomain` in `firebase-applet-config.json` must remain as the default Firebase domain (`gen-lang-client-0629412643.firebaseapp.com`) — do not change it to the production domain unless Firebase Hosting is configured for that domain.
 
 ## Architecture
 

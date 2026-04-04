@@ -42,7 +42,7 @@ import { TOPICS, UI_TRANSLATIONS, DEFAULT_AVATARS } from './constants';
 import { UserProgress, QuizQuestion, Language, Guild, P2PMessage, P2PTransaction, ProtocolNotification, Recommendation } from './types';
 import { generateQuiz, generatePathRecommendation } from './services/claudeService';
 import { FirebaseProvider, useFirebase } from './contexts/FirebaseContext';
-import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { signInWithRedirect, getRedirectResult, GoogleAuthProvider } from 'firebase/auth';
 import { auth, db } from './firebase';
 import WalletConnectModal from './components/WalletConnectModal';
 import { WalletState, watchWalletChanges, checkExistingConnection } from './services/walletService';
@@ -187,8 +187,36 @@ useEffect(() => {
   return cleanup;
 }, []);
 
-  
-  const currentTopic = useMemo(() => 
+  // Handle Google sign-in redirect result on page load
+  useEffect(() => {
+    getRedirectResult(auth)
+      .then(async (result) => {
+        if (!result) return;
+        const email = result.user.email || '';
+
+        const { getDoc, doc } = await import('firebase/firestore');
+        const docRef = doc(db, 'users', result.user.uid);
+        const docSnap = await getDoc(docRef);
+
+        if (!docSnap.exists()) {
+          const newProgress = {
+            ...localProgress,
+            onboarded: true,
+            isPro: false,
+            username: email.split('@')[0] || 'NewUser',
+          };
+          await updateProgress(newProgress);
+        }
+
+        window.history.pushState({}, '', '/dashboard');
+        window.dispatchEvent(new PopStateEvent('popstate'));
+      })
+      .catch((error) => {
+        console.error('Google redirect sign-in error:', error);
+      });
+  }, []);
+
+  const currentTopic = useMemo(() =>
     TOPICS.find(t => t.id === progress.currentTopicId) || TOPICS[0]
   , [progress.currentTopicId]);
 
@@ -277,37 +305,10 @@ useEffect(() => {
       onSignup={async () => {
         try {
           const provider = new GoogleAuthProvider();
-          const result = await signInWithPopup(auth, provider);
-          const email = result.user.email || '';
-          
-          // Check if user document already exists
-          const { getDoc, doc } = await import('firebase/firestore');
-          const docRef = doc(db, 'users', result.user.uid);
-          const docSnap = await getDoc(docRef);
-          
-          if (!docSnap.exists()) {
-            // New user, initialize their progress
-            const newProgress = {
-              ...localProgress,
-              onboarded: true,
-              isPro: false,
-              username: email.split('@')[0] || 'NewUser'
-            };
-            await updateProgress(newProgress);
-          }
-          
-          window.history.pushState({}, '', '/dashboard');
-          window.dispatchEvent(new PopStateEvent('popstate'));
+          await signInWithRedirect(auth, provider);
         } catch (error: any) {
-          console.error("Error signing in with Google", error);
-          if (error.code === 'auth/popup-closed-by-user') {
-            throw new Error('Sign-in popup was closed before completing. Please try again.');
-          } else if (error.code === 'auth/popup-blocked') {
-            throw new Error('Sign-in popup was blocked by your browser. Please allow popups for this site.');
-          } else if (error.code === 'auth/cancelled-popup-request') {
-            throw new Error('Sign-in request was cancelled. Please try again.');
-          }
-          throw new Error(error.message || 'Failed to sign in with Google.');
+          console.error('Google sign-in error:', error);
+          throw new Error(error.message || 'Failed to initiate Google sign-in.');
         }
       }} 
       onWalletConnect={(address) => {
