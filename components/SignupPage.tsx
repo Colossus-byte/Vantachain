@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
+import { connectWalletConnect } from '../services/walletService';
 
 declare global {
   interface Window {
@@ -33,11 +34,8 @@ const SignupPage: React.FC<SignupPageProps> = ({ onWalletConnect }) => {
           setTimeout(() => window.open('https://metamask.io/download/', '_blank'), 2000);
         }
       } else if (walletType === 'walletconnect') {
-        setIsConnecting(true);
-        setTimeout(() => {
-          setIsConnecting(false);
-          setErrorMsg('WalletConnect is currently unavailable in this environment.');
-        }, 1500);
+        const wallet = await connectWalletConnect();
+        onWalletConnect(wallet.address);
       } else if (walletType === 'coinbase') {
         setIsConnecting(true);
         setTimeout(() => {
