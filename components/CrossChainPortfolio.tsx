@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from 'recharts';
 import { useNewbieMode } from '../contexts/NewbieModeContext';
+import { getCoinPrices } from '../services/marketService';
 
 interface TokenHolding {
   id: string;
@@ -118,35 +119,45 @@ export default function CrossChainPortfolio({ walletAddress, onConnectWallet }: 
         console.warn("API fetch failed, falling back to mock data", apiError);
       }
 
-      // If APIs return empty, show demo data clearly labelled as such
+      // Fetch live prices from CoinGecko for all relevant coins
+      let livePrices: Record<string, { usd: number; usd_24h_change: number }> = {};
+      try {
+        livePrices = await getCoinPrices(['ethereum', 'binancecoin', 'matic-network', 'solana', 'usd-coin']);
+      } catch {
+        // silently fall back to placeholder prices already set on each holding
+      }
+
+      const COIN_ID_MAP: Record<string, string> = {
+        eth: 'ethereum',
+        bnb: 'binancecoin',
+        matic: 'matic-network',
+        sol: 'solana',
+        'usdc-eth': 'usd-coin',
+      };
+
+      const enrichWithLivePrice = (h: TokenHolding): TokenHolding => {
+        const coinId = COIN_ID_MAP[h.id];
+        const p = coinId ? livePrices[coinId] : undefined;
+        if (!p) return h;
+        const change24h = p.usd_24h_change ?? h.change24h;
+        const signal: 'Bullish' | 'Neutral' | 'Bearish' =
+          change24h > 2 ? 'Bullish' : change24h < -2 ? 'Bearish' : 'Neutral';
+        return { ...h, priceUsd: p.usd, valueUsd: h.balance * p.usd, change24h, signal };
+      };
+
       if (fetchedHoldings.length === 0) {
         setUsingMockData(true);
         const mockHoldings: TokenHolding[] = [
-          {
-            id: 'eth', symbol: 'ETH', name: 'Ethereum', chain: 'Ethereum', balance: 1.5, priceUsd: 3450.20, valueUsd: 5175.30, change24h: 1.2, isStable: false,
-            signal: 'Bullish', confidence: 82, summary: 'Network congestion dropping, leading to lower burn rate, but Layer 2 activity is driving overall ecosystem growth.'
-          },
-          {
-            id: 'usdc-eth', symbol: 'USDC', name: 'USD Coin', chain: 'Ethereum', balance: 2500, priceUsd: 1.00, valueUsd: 2500.00, change24h: 0.01, isStable: true,
-            signal: 'Neutral', confidence: 99, summary: 'Stablecoin pegged to USD. No significant price action expected.'
-          },
-          {
-            id: 'bnb', symbol: 'BNB', name: 'Binance Coin', chain: 'BNB Chain', balance: 12.4, priceUsd: 580.40, valueUsd: 7196.96, change24h: 0.8, isStable: false,
-            signal: 'Neutral', confidence: 70, summary: 'Launchpool announcements providing steady support. Price action is tightly bound to broader market movements.'
-          },
-          {
-            id: 'matic', symbol: 'MATIC', name: 'Polygon', chain: 'Polygon', balance: 5000, priceUsd: 0.85, valueUsd: 4250.00, change24h: -2.1, isStable: false,
-            signal: 'Bearish', confidence: 75, summary: 'Active addresses declining slightly week-over-week. Migration to new token standard causing temporary uncertainty.'
-          },
-          {
-            id: 'sol', symbol: 'SOL', name: 'Solana', chain: 'Solana', balance: 45.2, priceUsd: 145.80, valueUsd: 6590.16, change24h: -0.5, isStable: false,
-            signal: 'Neutral', confidence: 65, summary: 'Consolidating after recent rally. DEX volume remains high, but momentum indicators suggest a short-term cooling off period.'
-          }
-        ];
+          { id: 'eth',      symbol: 'ETH',  name: 'Ethereum',     chain: 'Ethereum',  balance: 1.5,   priceUsd: 3450.20, valueUsd: 5175.30,  change24h: 1.2,  isStable: false, signal: 'Bullish', confidence: 82, summary: 'Network congestion dropping, leading to lower burn rate, but Layer 2 activity is driving overall ecosystem growth.' },
+          { id: 'usdc-eth', symbol: 'USDC', name: 'USD Coin',     chain: 'Ethereum',  balance: 2500,  priceUsd: 1.00,    valueUsd: 2500.00,  change24h: 0.01, isStable: true,  signal: 'Neutral', confidence: 99, summary: 'Stablecoin pegged to USD. No significant price action expected.' },
+          { id: 'bnb',      symbol: 'BNB',  name: 'Binance Coin', chain: 'BNB Chain', balance: 12.4,  priceUsd: 580.40,  valueUsd: 7196.96,  change24h: 0.8,  isStable: false, signal: 'Neutral', confidence: 70, summary: 'Launchpool announcements providing steady support. Price action is tightly bound to broader market movements.' },
+          { id: 'matic',    symbol: 'MATIC',name: 'Polygon',      chain: 'Polygon',   balance: 5000,  priceUsd: 0.85,    valueUsd: 4250.00,  change24h: -2.1, isStable: false, signal: 'Bearish', confidence: 75, summary: 'Active addresses declining slightly week-over-week. Migration to new token standard causing temporary uncertainty.' },
+          { id: 'sol',      symbol: 'SOL',  name: 'Solana',       chain: 'Solana',    balance: 45.2,  priceUsd: 145.80,  valueUsd: 6590.16,  change24h: -0.5, isStable: false, signal: 'Neutral', confidence: 65, summary: 'Consolidating after recent rally. DEX volume remains high, but momentum indicators suggest a short-term cooling off period.' },
+        ].map(enrichWithLivePrice);
         setHoldings(mockHoldings);
       } else {
         setUsingMockData(false);
-        setHoldings(fetchedHoldings);
+        setHoldings(fetchedHoldings.map(enrichWithLivePrice));
       }
 
     } catch (err) {

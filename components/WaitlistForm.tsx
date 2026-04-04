@@ -1,4 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { initializeApp, getApps } from 'firebase/app';
+import { getFirestore, collection, addDoc, getDocs, query, where, getCountFromServer, serverTimestamp } from 'firebase/firestore';
+import firebaseConfig from '../firebase-applet-config.json';
+
+const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const WaitlistForm: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -7,49 +15,52 @@ const WaitlistForm: React.FC = () => {
   const [count, setCount] = useState<number | null>(null);
 
   useEffect(() => {
-    // Fetch initial count
-    fetch('/api/waitlist/count')
-      .then(res => res.json())
-      .then(data => {
-        if (data.count !== undefined) {
-          // Add a base number to make it look active if it's 0, or just use the real count
-          setCount(data.count > 0 ? data.count : 142); 
-        }
-      })
-      .catch(err => console.error('Failed to fetch count', err));
+    const fetchCount = async () => {
+      try {
+        const snap = await getCountFromServer(collection(db, 'waitlist'));
+        const real = snap.data().count;
+        setCount(real > 0 ? real : 142);
+      } catch (err) {
+        console.error('Failed to fetch waitlist count', err);
+      }
+    };
+    fetchCount();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) return;
 
+    const trimmed = email.trim().toLowerCase();
+    if (!EMAIL_REGEX.test(trimmed) || trimmed.length > 254) {
+      setStatus('error');
+      setErrorMessage('Please enter a valid email address.');
+      return;
+    }
+
     setStatus('loading');
     setErrorMessage('');
 
     try {
-      const res = await fetch('/api/waitlist', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      });
-
-      const data = await res.json();
-
-      if (res.status === 409) {
+      // Duplicate check
+      const q = query(collection(db, 'waitlist'), where('email', '==', trimmed));
+      const existing = await getDocs(q);
+      if (!existing.empty) {
         setStatus('error');
         setErrorMessage("You're already on the list!");
         return;
       }
 
-      if (!res.ok) {
-        throw new Error(data.details || data.error || 'Something went wrong');
-      }
+      await addDoc(collection(db, 'waitlist'), {
+        email: trimmed,
+        createdAt: serverTimestamp(),
+      });
 
       setStatus('success');
       if (count !== null) setCount(count + 1);
-      
+
       setTimeout(() => {
-        window.history.pushState({}, '', `/signup?email=${encodeURIComponent(email)}`);
+        window.history.pushState({}, '', `/signup?email=${encodeURIComponent(trimmed)}`);
         window.dispatchEvent(new PopStateEvent('popstate'));
       }, 2000);
     } catch (error: any) {
@@ -94,11 +105,11 @@ const WaitlistForm: React.FC = () => {
               )}
             </button>
           </div>
-          
+
           {status === 'error' && (
             <p className="text-red-400 text-sm text-center animate-in slide-in-from-top-2">{errorMessage}</p>
           )}
-          
+
           <div className="text-center mt-2 flex flex-col gap-2">
             <p className="text-sm text-slate-500">
               {count !== null ? (
@@ -107,7 +118,7 @@ const WaitlistForm: React.FC = () => {
                 <span className="opacity-0">Loading count...</span>
               )}
             </p>
-            <button 
+            <button
               type="button"
               onClick={() => {
                 window.history.pushState({}, '', '/signup');

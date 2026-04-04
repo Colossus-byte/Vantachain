@@ -23,8 +23,9 @@ export interface WalletMarketData {
 }
 
 const COINGECKO_BASE = 'https://api.coingecko.com/api/v3';
+const COINGECKO_API_KEY = import.meta.env.VITE_COINGECKO_API_KEY as string | undefined;
 
-// Simple in-memory cache to avoid hammering the free API
+// Simple in-memory cache to avoid hammering the API
 const cache: Record<string, { data: any; timestamp: number }> = {};
 const CACHE_TTL = 60 * 1000; // 1 minute
 
@@ -34,9 +35,10 @@ async function fetchWithCache(url: string): Promise<any> {
     return cache[url].data;
   }
 
-  const response = await fetch(url, {
-    headers: { Accept: 'application/json' },
-  });
+  const headers: Record<string, string> = { Accept: 'application/json' };
+  if (COINGECKO_API_KEY) headers['x-cg-demo-api-key'] = COINGECKO_API_KEY;
+
+  const response = await fetch(url, { headers });
 
   if (!response.ok) {
     if (response.status === 429) throw new Error('Rate limited. Data will refresh in a minute.');

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { getTopCoins, type CoinPrice } from '../services/marketService';
 
 interface Asset {
   id: string;
@@ -84,43 +85,38 @@ const MarketDemo: React.FC<MarketDemoProps> = ({ progress, onUpdate }) => {
   const fetchRealData = async () => {
     setIsFetching(true);
     try {
-      const response = await fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=15&page=1&sparkline=true');
-      const data = await response.json();
-      
-      if (Array.isArray(data)) {
-        const newAssets = data.map(coin => {
-          // Generate AI signals based on price action
-          let signal: 'Bullish' | 'Neutral' | 'Bearish' = 'Neutral';
-          let confidence = 50 + Math.floor(Math.random() * 30);
-          
-          if (coin.price_change_percentage_24h > 2) {
-            signal = 'Bullish';
-            confidence += 10;
-          } else if (coin.price_change_percentage_24h < -2) {
-            signal = 'Bearish';
-            confidence += 10;
-          }
+      const data: CoinPrice[] = await getTopCoins(15);
 
-          // Generate a summary
-          let summary = '';
-          if (signal === 'Bullish') summary = `Strong upward momentum detected for ${coin.name}. On-chain metrics suggest accumulation.`;
-          else if (signal === 'Bearish') summary = `Selling pressure observed for ${coin.name}. Key support levels are being tested.`;
-          else summary = `${coin.name} is consolidating. Volatility is low, awaiting next major market catalyst.`;
+      const newAssets = data.map(coin => {
+        let signal: 'Bullish' | 'Neutral' | 'Bearish' = 'Neutral';
+        let confidence = 50 + Math.floor(Math.random() * 30);
 
-          return {
-            id: coin.id,
-            symbol: coin.symbol.toUpperCase(),
-            name: coin.name,
-            price: coin.current_price,
-            change24h: coin.price_change_percentage_24h || 0,
-            signal,
-            confidence: Math.min(99, confidence),
-            summary,
-            sparkline: coin.sparkline_in_7d?.price || []
-          };
-        });
-        setAssets(newAssets);
-      }
+        if (coin.price_change_percentage_24h > 2) {
+          signal = 'Bullish';
+          confidence += 10;
+        } else if (coin.price_change_percentage_24h < -2) {
+          signal = 'Bearish';
+          confidence += 10;
+        }
+
+        let summary = '';
+        if (signal === 'Bullish') summary = `Strong upward momentum detected for ${coin.name}. On-chain metrics suggest accumulation.`;
+        else if (signal === 'Bearish') summary = `Selling pressure observed for ${coin.name}. Key support levels are being tested.`;
+        else summary = `${coin.name} is consolidating. Volatility is low, awaiting next major market catalyst.`;
+
+        return {
+          id: coin.id,
+          symbol: coin.symbol.toUpperCase(),
+          name: coin.name,
+          price: coin.current_price,
+          change24h: coin.price_change_percentage_24h || 0,
+          signal,
+          confidence: Math.min(99, confidence),
+          summary,
+          sparkline: coin.sparkline_in_7d?.price?.slice(-10) || [],
+        };
+      });
+      setAssets(newAssets);
     } catch (error) {
       console.error("Failed to fetch market data:", error);
     } finally {

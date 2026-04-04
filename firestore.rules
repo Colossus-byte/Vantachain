@@ -53,5 +53,15 @@ service cloud.firestore {
       allow update: if isOwner(userId) && isValidUser(request.resource.data);
       allow delete: if false; // Users cannot delete their own profile directly for now
     }
+
+    // ── Waitlist ─────────────────────────────────────────────────────────────
+    // Public create: anyone may add their email. No reads, updates, or deletes.
+    match /waitlist/{docId} {
+      allow create: if request.resource.data.keys().hasOnly(['email', 'createdAt']) &&
+                       request.resource.data.email is string &&
+                       request.resource.data.email.size() <= 254 &&
+                       request.resource.data.email.matches('^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$');
+      allow read, update, delete: if false;
+    }
   }
 }
