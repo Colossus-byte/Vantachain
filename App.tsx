@@ -212,6 +212,7 @@ useEffect(() => {
         window.dispatchEvent(new PopStateEvent('popstate'));
       })
       .catch((error) => {
+        if (error?.code === 'auth/unauthorized-domain') return;
         console.error('Google redirect sign-in error:', error);
       });
   }, []);
