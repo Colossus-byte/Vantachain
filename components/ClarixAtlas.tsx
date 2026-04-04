@@ -1,7 +1,14 @@
 
 import React from 'react';
 import { TOPICS } from '../constants';
-import { UserProgress } from '../types';
+import { UserProgress, Difficulty } from '../types';
+
+const DIFFICULTY_LABELS: Record<Difficulty, string> = {
+  [Difficulty.BASIC]: 'Level 1 — Beginner',
+  [Difficulty.FUNDAMENTAL]: 'Level 2 — Practical',
+  [Difficulty.MID]: 'Level 3 — Intermediate',
+  [Difficulty.PRO]: 'Level 4 — Advanced',
+};
 
 interface ClarixAtlasProps {
   progress: UserProgress;
@@ -15,11 +22,11 @@ const ClarixAtlas: React.FC<ClarixAtlasProps> = ({ progress, onSelectTopic }) =>
       
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 mb-10 md:mb-16">
         <div>
-          <h3 className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.4em] text-slate-500 mb-1 md:mb-2">Sovereign Roadmap</h3>
-          <p className="text-xl md:text-3xl font-black text-white tracking-tighter uppercase italic">The Clarix Atlas</p>
+          <h3 className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.4em] text-slate-500 mb-1 md:mb-2">Your Learning Path</h3>
+          <p className="text-xl md:text-3xl font-black text-white tracking-tighter uppercase italic">Knowledge Atlas</p>
         </div>
         <div className="px-4 md:px-6 py-1.5 md:py-2 bg-white/5 border border-white/10 rounded-full text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest">
-          SYNC STATUS: {((progress.completedTopics.length / TOPICS.length) * 100).toFixed(0)}%
+          PROGRESS: {((progress.completedTopics.length / TOPICS.length) * 100).toFixed(0)}% Complete
         </div>
       </div>
 
@@ -53,13 +60,13 @@ const ClarixAtlas: React.FC<ClarixAtlasProps> = ({ progress, onSelectTopic }) =>
               </div>
               
               <div>
-                <span className="text-[7px] md:text-[8px] font-black text-slate-600 uppercase tracking-widest block mb-0.5 md:mb-1">{topic.difficulty}</span>
+                <span className="text-[7px] md:text-[8px] font-black text-slate-600 uppercase tracking-widest block mb-0.5 md:mb-1">{DIFFICULTY_LABELS[topic.difficulty]}</span>
                 <h4 className="text-xs md:text-sm font-black text-white uppercase tracking-tight">{topic.title}</h4>
               </div>
 
               {!isUnlocked && (
                 <div className="absolute -top-2 md:-top-3 px-2 md:px-3 py-0.5 md:py-1 bg-rose-500/20 border border-rose-500/40 rounded-lg text-[6px] md:text-[7px] font-black text-rose-500 uppercase tracking-widest">
-                  Restricted
+                  Complete previous level first
                 </div>
               )}
             </button>

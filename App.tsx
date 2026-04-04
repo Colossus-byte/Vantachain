@@ -228,7 +228,7 @@ useEffect(() => {
       };
 
       setProgress(updatedProgress);
-      addNotification('Protocol Proof Success', `Authenticated node. Reward: ${currentTopic.rewardTokens} $PATH.`, 'success');
+      addNotification('Lesson Complete!', `Great work! You earned ${currentTopic.rewardTokens} tokens. Keep going!`, 'success');
       
       // Generate AI recommendation based on new progress
       generateNewRecommendation(updatedProgress);
@@ -454,7 +454,7 @@ useEffect(() => {
                   <div className="animate-in fade-in slide-in-from-bottom-8 duration-700">
                     <div className="flex items-center gap-3 mb-6 md:mb-8">
                       <span className="px-2 md:px-3 py-1 bg-white/5 border border-white/10 rounded-lg text-[8px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                        {currentTopic.difficulty} BLOCK
+                        {currentTopic.difficulty}
                       </span>
                       <span className="text-[8px] md:text-[10px] font-bold text-electric-violet uppercase tracking-[0.2em]">{currentTopic.category}</span>
                     </div>
@@ -470,7 +470,7 @@ useEffect(() => {
                         disabled={isGeneratingQuiz}
                         className="w-full sm:w-auto px-8 md:px-16 py-4 md:py-6 bg-cyber-lime text-black font-black uppercase tracking-widest text-[10px] md:text-xs rounded-2xl md:rounded-3xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-4"
                       >
-                        {isGeneratingQuiz ? 'Forging Block...' : progress.currentSubtopicIndex === currentTopic.subtopics.length - 1 ? 'Proof of Knowledge' : 'Sync Next Node'}
+                        {isGeneratingQuiz ? 'Generating Quiz...' : progress.currentSubtopicIndex === currentTopic.subtopics.length - 1 ? 'Take the Quiz' : 'Next Lesson'}
                         <i className="fa-solid fa-chevron-right text-[8px] md:text-[10px]"></i>
                       </button>
                     </div>
