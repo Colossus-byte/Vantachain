@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { connectWalletConnect } from '../services/walletService';
+import { connectWalletConnect, connectCoinbase } from '../services/walletService';
 
 declare global {
   interface Window {
@@ -37,11 +37,8 @@ const SignupPage: React.FC<SignupPageProps> = ({ onWalletConnect }) => {
         const wallet = await connectWalletConnect();
         onWalletConnect(wallet.address);
       } else if (walletType === 'coinbase') {
-        setIsConnecting(true);
-        setTimeout(() => {
-          setIsConnecting(false);
-          setErrorMsg('Coinbase Wallet connection is coming soon!');
-        }, 1500);
+        const wallet = await connectCoinbase();
+        onWalletConnect(wallet.address);
       }
     } catch (error: any) {
       console.error("Wallet connection error:", error);

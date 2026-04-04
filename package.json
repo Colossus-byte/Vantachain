@@ -11,6 +11,7 @@
     "lint": "tsc --noEmit"
   },
   "dependencies": {
+    "@coinbase/wallet-sdk": "^4.3.7",
     "@google/genai": "^1.38.0",
     "@web3modal/ethers": "^5.1.11",
     "dotenv": "^17.3.1",

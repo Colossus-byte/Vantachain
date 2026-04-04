@@ -1,7 +1,8 @@
 // services/walletService.ts
-// Clarix — Web3 Wallet Connection (MetaMask + WalletConnect)
+// Clarix — Web3 Wallet Connection (MetaMask + WalletConnect + Coinbase)
 
 import { createWeb3Modal, defaultConfig } from '@web3modal/ethers';
+import { CoinbaseWalletSDK } from '@coinbase/wallet-sdk';
 import { BrowserProvider, formatEther } from 'ethers';
 
 export interface WalletState {
@@ -208,11 +209,81 @@ export async function connectWalletConnect(): Promise<WalletState> {
   });
 }
 
+// ─── Coinbase Wallet ──────────────────────────────────────────────────────────
+
+type CbProvider = ReturnType<InstanceType<typeof CoinbaseWalletSDK>['makeWeb3Provider']>;
+let cbProvider: CbProvider | null = null;
+
+function getCbProvider(): CbProvider {
+  if (cbProvider) return cbProvider;
+  const sdk = new CoinbaseWalletSDK({
+    appName: 'Clarix Protocol',
+    appChainIds: [1, 8453, 137, 42161, 10, 56],
+  });
+  cbProvider = sdk.makeWeb3Provider();
+  return cbProvider;
+}
+
+export async function connectCoinbase(): Promise<WalletState> {
+  try {
+    const provider = getCbProvider();
+    const accounts = await provider.request({ method: 'eth_requestAccounts' }) as string[];
+
+    if (!accounts || accounts.length === 0) {
+      throw {
+        code: 'NO_ACCOUNTS',
+        message: 'No accounts returned',
+        userMessage: 'No accounts found. Please unlock your Coinbase Wallet.',
+      } as WalletError;
+    }
+
+    const address = accounts[0];
+    const chainIdHex = await provider.request({ method: 'eth_chainId' }) as string;
+    const chainId = parseInt(chainIdHex, 16);
+
+    let balance = '0.0000';
+    try {
+      const balanceHex = await provider.request({
+        method: 'eth_getBalance',
+        params: [address, 'latest'],
+      }) as string;
+      balance = hexToEth(balanceHex);
+    } catch { /* non-critical */ }
+
+    return {
+      address,
+      chainId,
+      chainName: getChainName(chainId),
+      balance,
+      balanceUSD: 0,
+      provider: 'coinbase',
+      isConnected: true,
+    };
+  } catch (err: any) {
+    if (err.code === 4001 || err.message?.includes('User rejected') || err.message?.includes('cancelled')) {
+      throw {
+        code: 'USER_REJECTED',
+        message: 'User rejected connection',
+        userMessage: 'You cancelled the Coinbase Wallet connection. Try again when ready.',
+      } as WalletError;
+    }
+    if (err.code && err.userMessage) throw err;
+    throw {
+      code: 'CONNECTION_FAILED',
+      message: err.message || 'Unknown error',
+      userMessage: 'Failed to connect Coinbase Wallet. Please try again.',
+    } as WalletError;
+  }
+}
+
 // ─── Disconnect ───────────────────────────────────────────────────────────────
 
 export async function disconnectWallet(): Promise<void> {
   if (wcModal) {
     try { await wcModal.disconnect(); } catch { /* ignore */ }
+  }
+  if (cbProvider) {
+    try { await cbProvider.disconnect(); } catch { /* ignore */ }
   }
 }
 
