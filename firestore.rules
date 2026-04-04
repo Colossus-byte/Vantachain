@@ -63,5 +63,27 @@ service cloud.firestore {
                        request.resource.data.email.matches('^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$');
       allow read, update, delete: if false;
     }
+
+    // ── Activity Feed ─────────────────────────────────────────────────────────
+    // Anyone can write lesson-completion events (anonymized). Public read for live feed.
+    match /activity_feed/{docId} {
+      allow create: if request.resource.data.keys().hasOnly(['displayId', 'lessonTitle', 'topicTitle', 'timestamp']) &&
+                       request.resource.data.displayId is string &&
+                       request.resource.data.displayId.size() <= 50 &&
+                       request.resource.data.lessonTitle is string &&
+                       request.resource.data.lessonTitle.size() <= 200 &&
+                       request.resource.data.topicTitle is string &&
+                       request.resource.data.topicTitle.size() <= 200;
+      allow read: if true;
+      allow update, delete: if false;
+    }
+
+    // ── Leaderboard ───────────────────────────────────────────────────────────
+    // Public read so GuildLeaderboard component can show top users.
+    // Only the authenticated owner can write their own entry.
+    match /leaderboard/{userId} {
+      allow read: if true;
+      allow write: if isOwner(userId);
+    }
   }
 }

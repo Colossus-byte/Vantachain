@@ -44,6 +44,13 @@ import { generateQuiz, generatePathRecommendation } from './services/claudeServi
 import { FirebaseProvider, useFirebase } from './contexts/FirebaseContext';
 import WalletConnectModal from './components/WalletConnectModal';
 import { WalletState, watchWalletChanges, checkExistingConnection } from './services/walletService';
+import { addDoc, collection, doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from './firebase';
+import LevelCompletionCelebration from './components/LevelCompletionCelebration';
+import LessonTutor from './components/LessonTutor';
+import ActivityFeed from './components/ActivityFeed';
+import GuildLeaderboard from './components/GuildLeaderboard';
+import StreakBadge from './components/StreakBadge';
 
 const AppContent: React.FC = () => {
   const { t: tTerm, Term } = useTerminology();
@@ -65,11 +72,11 @@ const [walletState, setWalletState] = useState<WalletState | null>(null);
     } catch {
       // corrupted localStorage — start fresh
     }
-    return { 
-      completedSubtopics: [], 
+    return {
+      completedSubtopics: [],
       completedTopics: [],
-      tokenBalance: 0, 
-      currentTopicId: 'b1', 
+      tokenBalance: 0,
+      currentTopicId: 'b1',
       currentSubtopicIndex: 0,
       discoveredFactIds: [],
       quizHistory: [],
@@ -88,7 +95,11 @@ const [walletState, setWalletState] = useState<WalletState | null>(null);
       vantaRank: 1,
       isPro: false,
       isPrivate: false,
-      aiSentinelAccess: true
+      aiSentinelAccess: true,
+      xp: 0,
+      streak: 0,
+      lastActiveDate: '',
+      longestStreak: 0,
     };
   });
 
@@ -156,6 +167,8 @@ const handleWalletDisconnected = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [recommendation, setRecommendation] = useState<Recommendation | null>(null);
   const [isGeneratingRecommendation, setIsGeneratingRecommendation] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [celebrationData, setCelebrationData] = useState<{ topicTitle: string; xpEarned: number; tokensEarned: number; nextTopicTitle?: string } | null>(null);
 
   useEffect(() => {
     const storageKey = progress.did ? `clarix_v1_state_${progress.did}` : 'clarix_v1_state';
@@ -195,12 +208,70 @@ useEffect(() => {
 
   const currentSubtopic = currentTopic.subtopics[progress.currentSubtopicIndex];
 
+  // ── Gamification helpers ──────────────────────────────────────────────────
+  const computeStreakUpdates = (base: UserProgress) => {
+    const today = new Date().toISOString().split('T')[0];
+    const yesterday = new Date(Date.now() - 86_400_000).toISOString().split('T')[0];
+    const last = base.lastActiveDate || '';
+    let newStreak = base.streak || 0;
+    if (last !== today) {
+      newStreak = last === yesterday ? newStreak + 1 : 1;
+    }
+    return {
+      streak: newStreak,
+      lastActiveDate: today,
+      longestStreak: Math.max(base.longestStreak || 0, newStreak),
+    };
+  };
+
+  const writeActivityEvent = async (lessonTitle: string, topicTitle: string) => {
+    try {
+      const rawId = progress.walletAddress || progress.username || 'Learner';
+      const displayId = progress.walletAddress
+        ? `${progress.walletAddress.slice(0, 6)}...${progress.walletAddress.slice(-4)}`
+        : `${rawId.slice(0, 8)}`;
+      await addDoc(collection(db, 'activity_feed'), {
+        displayId,
+        lessonTitle,
+        topicTitle,
+        timestamp: serverTimestamp(),
+      });
+    } catch { /* non-critical */ }
+  };
+
+  const writeLeaderboard = async (newXP: number) => {
+    if (!user) return;
+    try {
+      await setDoc(doc(db, 'leaderboard', user.uid), {
+        username: progress.username,
+        xp: newXP,
+        guild: progress.guild,
+        streak: progress.streak,
+        updatedAt: serverTimestamp(),
+      }, { merge: true });
+    } catch { /* non-critical */ }
+  };
+
   const handleNext = () => {
     const isLastSubtopic = progress.currentSubtopicIndex === currentTopic.subtopics.length - 1;
+
+    // Award XP + update streak for this lesson
+    const XP_PER_LESSON = 50;
+    setProgress(prev => {
+      const streakUpdates = computeStreakUpdates(prev);
+      const newXP = (prev.xp || 0) + XP_PER_LESSON;
+      const newCompleted = [...new Set([...prev.completedSubtopics, currentSubtopic.id])];
+      const updates = { ...streakUpdates, xp: newXP, completedSubtopics: newCompleted };
+      writeLeaderboard(newXP);
+      return isLastSubtopic
+        ? { ...prev, ...updates }
+        : { ...prev, ...updates, currentSubtopicIndex: prev.currentSubtopicIndex + 1 };
+    });
+
+    writeActivityEvent(currentSubtopic.title, currentTopic.title);
+
     if (isLastSubtopic) {
       handleStartQuiz();
-    } else {
-      setProgress(prev => ({ ...prev, currentSubtopicIndex: prev.currentSubtopicIndex + 1 }));
     }
   };
 
@@ -217,20 +288,32 @@ useEffect(() => {
       const currentIndex = TOPICS.findIndex(t => t.id === currentTopic.id);
       const nextTopic = TOPICS[currentIndex + 1];
       const newCompletedTopics = [...new Set([...progress.completedTopics, currentTopic.id])];
-      
+      const XP_LEVEL_BONUS = 200;
+      const newXP = (progress.xp || 0) + XP_LEVEL_BONUS;
+
       const updatedProgress = {
         ...progress,
         completedTopics: newCompletedTopics,
         tokenBalance: progress.tokenBalance + currentTopic.rewardTokens,
         currentTopicId: nextTopic?.id || progress.currentTopicId,
         currentSubtopicIndex: 0,
-        vantaRank: progress.vantaRank + 1
+        vantaRank: progress.vantaRank + 1,
+        xp: newXP,
       };
 
       setProgress(updatedProgress);
-      addNotification('Lesson Complete!', `Great work! You earned ${currentTopic.rewardTokens} tokens. Keep going!`, 'success');
-      
-      // Generate AI recommendation based on new progress
+      writeLeaderboard(newXP);
+
+      // Trigger celebration overlay
+      setCelebrationData({
+        topicTitle: currentTopic.title,
+        xpEarned: XP_LEVEL_BONUS,
+        tokensEarned: currentTopic.rewardTokens,
+        nextTopicTitle: nextTopic?.title,
+      });
+      setShowCelebration(true);
+
+      addNotification('Level Complete!', `+${XP_LEVEL_BONUS} XP  ·  +${currentTopic.rewardTokens} $PATH tokens earned!`, 'success');
       generateNewRecommendation(updatedProgress);
     }
     setIsQuizMode(false);
@@ -344,6 +427,16 @@ useEffect(() => {
 />
 
       {showManifesto && <Manifesto onClose={() => setShowManifesto(false)} />}
+      {celebrationData && (
+        <LevelCompletionCelebration
+          isVisible={showCelebration}
+          topicTitle={celebrationData.topicTitle}
+          xpEarned={celebrationData.xpEarned}
+          tokensEarned={celebrationData.tokensEarned}
+          nextTopicTitle={celebrationData.nextTopicTitle}
+          onDismiss={() => setShowCelebration(false)}
+        />
+      )}
       
       <div className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-[55] transition-opacity duration-300 md:hidden ${isSidebarOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} onClick={() => setIsSidebarOpen(false)}></div>
 
@@ -407,13 +500,16 @@ useEffect(() => {
             </button>
           </div>
 
-          <div className="flex items-center gap-3 md:gap-8">
+          <div className="flex items-center gap-2 md:gap-4 flex-wrap justify-end">
             <div className="hidden sm:block">
               <NewbieToggle />
             </div>
-            <div className="flex items-center gap-2 md:gap-4 bg-white/5 px-3 md:px-6 py-1.5 md:py-3 rounded-full border border-white/10">
-              <i className="fa-solid fa-coins text-cyber-lime text-[10px] md:text-base"></i>
-              <span className="text-xs md:text-lg font-bold text-white tracking-tighter">{progress.tokenBalance.toLocaleString()} <span className="text-[7px] md:text-[10px] text-slate-500">$PATH</span></span>
+            <div className="hidden md:block">
+              <StreakBadge streak={progress.streak || 0} lastActiveDate={progress.lastActiveDate || ''} xp={progress.xp || 0} />
+            </div>
+            <div className="flex items-center gap-2 md:gap-3 bg-white/5 px-3 md:px-5 py-1.5 md:py-2.5 rounded-full border border-white/10">
+              <i className="fa-solid fa-coins text-cyber-lime text-[10px] md:text-sm"></i>
+              <span className="text-xs md:text-base font-bold text-white tracking-tighter">{progress.tokenBalance.toLocaleString()} <span className="text-[7px] md:text-[10px] text-slate-500">$PATH</span></span>
             </div>
           </div>
         </header>
@@ -461,17 +557,26 @@ useEffect(() => {
 
                     <h1 className="text-4xl md:text-7xl font-bold text-white mb-8 md:mb-12 tracking-tighter leading-none">{currentSubtopic.title}</h1>
 
-                    <div className="mb-12 md:mb-16"><RichContent content={currentSubtopic.content} /></div>
+                    <div className="mb-8 md:mb-10"><RichContent content={currentSubtopic.content} /></div>
 
-                    <div className="flex flex-col sm:flex-row justify-between items-center gap-6 py-8 md:py-12 border-t border-white/5">
+                    {/* AI Tutor */}
+                    <LessonTutor lessonTitle={currentSubtopic.title} lessonContent={currentSubtopic.content} />
+
+                    <div className="flex flex-col sm:flex-row justify-between items-center gap-6 py-8 md:py-12 border-t border-white/5 mt-10">
                       <AudioNarrator text={currentSubtopic.content} language={progress.language} />
-                      <button 
+                      <button
                         onClick={handleNext}
                         disabled={isGeneratingQuiz}
-                        className="w-full sm:w-auto px-8 md:px-16 py-4 md:py-6 bg-cyber-lime text-black font-black uppercase tracking-widest text-[10px] md:text-xs rounded-2xl md:rounded-3xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-4"
+                        className="w-full sm:w-auto px-8 md:px-16 py-4 md:py-6 bg-cyber-lime text-black font-black uppercase tracking-widest text-[10px] md:text-xs rounded-2xl md:rounded-3xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-4 disabled:opacity-50"
                       >
-                        {isGeneratingQuiz ? 'Generating Quiz...' : progress.currentSubtopicIndex === currentTopic.subtopics.length - 1 ? 'Take the Quiz' : 'Next Lesson'}
-                        <i className="fa-solid fa-chevron-right text-[8px] md:text-[10px]"></i>
+                        {isGeneratingQuiz ? (
+                          <><i className="fa-solid fa-circle-notch fa-spin"></i> Generating Quiz...</>
+                        ) : progress.currentSubtopicIndex === currentTopic.subtopics.length - 1 ? (
+                          'Take the Quiz'
+                        ) : (
+                          'Next Lesson'
+                        )}
+                        {!isGeneratingQuiz && <i className="fa-solid fa-chevron-right text-[8px] md:text-[10px]"></i>}
                       </button>
                     </div>
 
@@ -484,9 +589,15 @@ useEffect(() => {
                 )}
               </div>
 
-              <div className="lg:col-span-4 space-y-8 md:space-y-12 lg:sticky lg:top-36 h-fit">
+              <div className="lg:col-span-4 space-y-8 md:space-y-10 lg:sticky lg:top-36 h-fit">
                 {!isQuizMode && (
                   <>
+                    {/* Mobile streak badge */}
+                    <div className="md:hidden">
+                      <StreakBadge streak={progress.streak || 0} lastActiveDate={progress.lastActiveDate || ''} xp={progress.xp || 0} />
+                    </div>
+                    <ActivityFeed />
+                    <GuildLeaderboard progress={progress} />
                     <ZkPrivacyCloak isActive={progress.isPrivate} onToggle={togglePrivacy} />
                     <ProFeatureWrapper isPro={progress.isPro} featureName={tTerm("Neural Network Analytics")} onUpgrade={togglePro}>
                       <AiSentimentOracle

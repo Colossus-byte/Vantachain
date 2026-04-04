@@ -134,6 +134,11 @@ export interface UserProgress {
   did?: string;
   ipfsWatchlistCid?: string;
   ipfsPortfolioCid?: string;
+  // Gamification
+  xp: number;
+  streak: number;
+  lastActiveDate: string; // 'YYYY-MM-DD'
+  longestStreak: number;
 }
 
 export interface Recommendation {

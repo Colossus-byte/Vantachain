@@ -157,17 +157,17 @@ export const TOPICS: Topic[] = [
     subtopics: [
       {
         id: 'b1_s1',
-        title: 'What Is Crypto and Why It Matters in Africa',
+        title: 'What Is Crypto and Why the World Needs It',
         content: wrapNote(
-          `Cryptocurrency is digital money that lives on the internet — no bank, no government, no middleman. Think of it like M-Pesa, but nobody owns the network. Anyone with a smartphone can send and receive value anywhere in the world, usually within minutes, for a fraction of the cost.
+          `Cryptocurrency is digital money that lives on the internet — no bank, no government, no middleman. Think of it like M-Pesa or Venmo, but nobody owns the network. Anyone with a smartphone can send and receive value anywhere in the world, usually within minutes, for a fraction of the cost.
 
-Why does this matter in Africa specifically? Consider remittances. Africans in the diaspora send over $48 billion home every year, but traditional services like Western Union or MoneyGram take between 8 and 12% in fees. With crypto, you can send money from London to Nairobi or from the US to Lagos and the fee is often less than $1 — arriving in minutes instead of days.
+Why does this matter? Consider remittances. People around the world send hundreds of billions of dollars home to family every year, but traditional services like Western Union or MoneyGram take between 8 and 12% in fees. With crypto, you can send money from London to Nairobi, New York to Manila, or Dubai to Karachi and the fee is often less than $1 — arriving in minutes instead of days.
 
-Then there's currency instability. When the Nigerian naira lost over 40% of its value in 2023, Nigerians who held even a small amount of Bitcoin or USDT (a dollar-pegged stablecoin) protected their savings. The same story played out in Zimbabwe, Ghana, and Ethiopia. Crypto gives ordinary people access to a store of value that their governments cannot inflate away.
+Then there is currency instability. When the Nigerian naira lost over 40% of its value in 2023, Argentinian peso inflation exceeded 200%, and the Turkish lira hit historic lows, people who held even a small amount of Bitcoin or USDT (a dollar-pegged stablecoin) protected their savings. Crypto gives ordinary people access to a store of value that their governments cannot inflate away.
 
-There is also the financial inclusion angle. Over 60% of adults in Sub-Saharan Africa are unbanked — they have no savings account, no credit, no access to international payments. Crypto only requires a smartphone and internet. In 2023, Nigeria, Kenya, and South Africa were all in the global top 10 for crypto adoption, not because Africans are speculators, but because they have real-world reasons to use it.`,
-          "Crypto is not just an investment — for many Africans it is a practical financial tool for cheaper remittances, savings protection, and access to global markets.",
-          "Start by following credible African crypto communities like Crypto Mzigo (Kenya), Quidax Blog (Nigeria), or the Binance Africa Twitter account to stay informed without the noise."
+There is also the financial inclusion angle. Over 1.4 billion adults worldwide are unbanked — they have no savings account, no credit, and no access to international payments. Most are in Sub-Saharan Africa, South Asia, and Southeast Asia. Crypto only requires a smartphone and internet access. Countries like Nigeria, Vietnam, the Philippines, and India consistently rank in the global top 10 for crypto adoption — not because of speculation, but because people have real-world reasons to use it.`,
+          "Crypto is not just an investment — it is a practical financial tool for cheaper remittances, savings protection, and access to global markets that works for anyone with a smartphone.",
+          "Start by following credible crypto education communities: Binance Academy, CoinGecko Learn, or regional communities like Quidax Blog (Nigeria), Crypto Mzigo (Kenya), or Binance en Español. Curated signal over noise."
         )
       },
       {
@@ -195,7 +195,7 @@ There are two main types of wallets. A custodial wallet is managed by an exchang
 
 Every self-custody wallet gives you a seed phrase — 12 or 24 random words in a specific order. This phrase IS your wallet. It can restore access on any device. Write it down on paper. Store that paper somewhere safe — not on your phone, not in a screenshot, not in a Google Doc. Anyone who gets those words gets your money.
 
-For most beginners in Africa, a reputable exchange (Binance, Yellow Card, or Quidax) is a reasonable starting point because of the simpler interface and local payment options. But as your holdings grow, moving to self-custody becomes increasingly important.`,
+For most beginners, a reputable exchange — Binance, Coinbase, Kraken, or Yellow Card (strong in Africa) — is a reasonable starting point because of the simpler interface and local payment options. But as your holdings grow, moving to self-custody becomes increasingly important.`,
           "Your seed phrase is the master key to your crypto. Protect it like cash — because it is.",
           "Never store your seed phrase digitally. Screenshots, WhatsApp messages, and cloud notes are all vulnerable. Write it on paper and store it in a physically secure location."
         )
@@ -219,11 +219,11 @@ For most beginners in Africa, a reputable exchange (Binance, Yellow Card, or Qui
         content: wrapNote(
           `Buying crypto for the first time can feel intimidating, but the process is straightforward once you know what to look for. The most important decision is choosing where to buy — your exchange.
 
-For African users, reputable options include Binance (the world's largest exchange, with M-Pesa and bank transfer support in many African countries), Yellow Card (built specifically for Africa, available in 20+ countries), and Quidax (strong in Nigeria, Ghana, and Kenya). For peer-to-peer (P2P) trading — where you buy directly from another person — Noones (formerly Paxful) and the P2P section on Binance are widely used.
+Reputable options depending on where you live include Binance (the world's largest exchange, with support for M-Pesa, bank transfer, and card payments across many regions), Coinbase and Kraken (trusted globally, strong in the US and Europe), Yellow Card (built specifically for Africa, available in 20+ countries), and Quidax (strong in Nigeria and Ghana). For peer-to-peer (P2P) trading — where you buy directly from another person — Noones (formerly Paxful) and the P2P section on Binance are widely used.
 
 After choosing an exchange, you will need to complete KYC (Know Your Customer) — uploading a national ID or passport and sometimes a selfie. This is standard practice and required by law. It typically takes a few hours to a day. Once verified, you can deposit local currency via bank transfer, mobile money, or card and purchase crypto.
 
-Start small — there is no minimum. You can buy $10 worth of Bitcoin or USDT to get comfortable before committing larger amounts. Dollar-cost averaging (DCA) is a strategy where you invest a fixed amount regularly — say, KES 1,000 every week — regardless of price. This removes the pressure of trying to buy at exactly the right time.
+Start small — there is no minimum. You can buy $10 worth of Bitcoin or USDT to get comfortable before committing larger amounts. Dollar-cost averaging (DCA) is a strategy where you invest a fixed amount regularly — say, $10, £20, or KES 1,000 every week — regardless of price. This removes the pressure of trying to buy at exactly the right time.
 
 One golden rule: only invest what you can afford to lose. Crypto is volatile. Bitcoin has dropped 80% from its all-time high more than once. Those who kept investing through the dips have historically been rewarded — but that requires not needing the money back urgently.`,
           "Choose a regulated, Africa-friendly exchange, complete KYC, start small, and invest consistently rather than trying to time the market.",
@@ -234,7 +234,7 @@ One golden rule: only invest what you can afford to lose. Crypto is volatile. Bi
         id: 'f1_s2',
         title: 'How to Spot and Avoid Crypto Scams',
         content: wrapNote(
-          `Africa has seen explosive crypto adoption — and unfortunately, an equally explosive rise in crypto scams. Understanding the patterns can save you everything.
+          `As crypto adoption has grown worldwide, so have the scams targeting new users. Understanding the patterns can save you everything.
 
 The most common scam is the investment scheme. You see a WhatsApp message or Instagram post from someone promising 50% weekly returns on crypto investments. They show screenshots of big profits. Real crypto does not work this way. No legitimate investment guarantees any return, let alone 50% per week. These are Ponzi schemes — they pay early investors with money from new investors until it collapses.
 
@@ -242,7 +242,7 @@ Romance scams (sometimes called "pig butchering") are growing rapidly. Someone c
 
 Rug pulls happen in new tokens and NFT projects. Developers create a new coin, generate hype, attract investors, and then sell all their holdings at once — crashing the price to zero and walking away with the money.
 
-Other red flags: anyone who asks for your seed phrase (legitimate services never will), unsolicited "tech support" who want remote access to your device, and celebrity endorsements for coins you have never heard of. In 2023, fake Elon Musk and Dangote crypto promotions tricked thousands of Africans.
+Other red flags: anyone who asks for your seed phrase (legitimate services never will), unsolicited "tech support" who want remote access to your device, and celebrity endorsements for coins you have never heard of. Fake celebrity endorsements — using Elon Musk, local business tycoons, or popular influencers — have tricked thousands of people worldwide into sending crypto to scammers.
 
 If someone contacts you about crypto and you did not ask them to — stop, pause, and verify independently before doing anything.`,
           "Guaranteed returns in crypto do not exist. Anyone promising them is running a scam.",

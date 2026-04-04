@@ -181,3 +181,10 @@ body {
     from { transform: translateY(-100%); }
     to { transform: translateY(100%); }
 }
+
+/* Celebration confetti */
+@keyframes confettiFall {
+    0%   { opacity: 1; transform: translateY(0) rotate(0deg); }
+    80%  { opacity: 0.8; }
+    100% { opacity: 0; transform: translateY(100vh) rotate(720deg); }
+}

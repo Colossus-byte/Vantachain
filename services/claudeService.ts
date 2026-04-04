@@ -328,7 +328,23 @@ Make items genuinely insightful and specific. Not generic crypto news summaries.
   }
 }
 
-// ─── 6. Smart Contract Audit Summary ─────────────────────────────────────────
+// ─── 6. Lesson Tutor — one-question AI clarification after each lesson ────────
+export async function askTutor(lessonTitle: string, lessonContent: string, question: string): Promise<string> {
+  const system = `You are a friendly, encouraging crypto tutor inside the Clarix learning app. A student just finished a lesson and has a follow-up question.
+
+Lesson they just read: "${lessonTitle}"
+Lesson summary: "${lessonContent.replace(/\n+/g, ' ').slice(0, 900)}"
+
+Answer their question in plain, conversational English. Max 3 short paragraphs. Use simple analogies where helpful. Be warm and encouraging — this is a beginner-friendly platform.`;
+
+  try {
+    return await callClaude(system, question, 500);
+  } catch {
+    return "I couldn't process that right now — please try again in a moment.";
+  }
+}
+
+// ─── 7. Smart Contract Audit Summary ─────────────────────────────────────────
 export async function generateAuditSummary(contractCode: string): Promise<string> {
   const system = `You are a smart contract security expert on the Clarix platform.
 Analyze smart contract code and provide a clear, educational security assessment.
