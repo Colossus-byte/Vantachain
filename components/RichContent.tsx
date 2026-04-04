@@ -7,9 +7,10 @@ interface RichContentProps {
   content: string;
 }
 
+// Module-scope: avoids recompiling the regex on every render
+const codeBlockRegex = /```(\w+)\n([\s\S]*?)```/g;
+
 const RichContent: React.FC<RichContentProps> = ({ content }) => {
-  // Regex to detect code blocks like ```solidity ... ```
-  const codeBlockRegex = /```(\w+)\n([\s\S]*?)```/g;
   
   const injectLinks = (text: string) => {
     let result: (string | React.JSX.Element)[] = [text];

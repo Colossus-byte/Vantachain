@@ -6,6 +6,25 @@ import path from 'path';
 
 dotenv.config();
 
+// Simple in-memory rate limiter (per IP, resets every minute)
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const RATE_WINDOW_MS = 60_000;
+const RATE_LIMIT_MAX = 5;
+
+function isRateLimited(ip: string): boolean {
+  const now = Date.now();
+  const record = rateLimitMap.get(ip);
+  if (!record || now > record.resetAt) {
+    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_WINDOW_MS });
+    return false;
+  }
+  if (record.count >= RATE_LIMIT_MAX) return true;
+  record.count++;
+  return false;
+}
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 async function startServer() {
   const app = express();
   const PORT = 3000;
@@ -72,10 +91,18 @@ async function startServer() {
   });
 
   app.post('/api/waitlist', async (req, res) => {
+    const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0].trim() || req.socket.remoteAddress || 'unknown';
+    if (isRateLimited(ip)) {
+      return res.status(429).json({ error: 'Too many requests. Please try again later.' });
+    }
+
     try {
       const { email } = req.body;
-      if (!email) {
+      if (!email || typeof email !== 'string') {
         return res.status(400).json({ error: 'Email is required' });
+      }
+      if (!EMAIL_REGEX.test(email) || email.length > 254) {
+        return res.status(400).json({ error: 'Invalid email address' });
       }
 
       const client = getSheetsClient();

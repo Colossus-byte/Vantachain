@@ -35,6 +35,7 @@ export default function CrossChainPortfolio({ walletAddress, onConnectWallet }: 
   const [isFetching, setIsFetching] = useState(false);
   const [holdings, setHoldings] = useState<TokenHolding[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [usingMockData, setUsingMockData] = useState(false);
 
   // Sync input with prop
   useEffect(() => {
@@ -50,10 +51,9 @@ export default function CrossChainPortfolio({ walletAddress, onConnectWallet }: 
     setError(null);
 
     try {
-      // Placeholders for Premium API keys
-      const ETHERSCAN_API_KEY = (import.meta as any).env?.VITE_ETHERSCAN_API_KEY || 'YourApiKeyToken';
-      const BSCSCAN_API_KEY = (import.meta as any).env?.VITE_BSCSCAN_API_KEY || 'YourApiKeyToken';
-      const POLYGONSCAN_API_KEY = (import.meta as any).env?.VITE_POLYGONSCAN_API_KEY || 'YourApiKeyToken';
+      const ETHERSCAN_API_KEY = import.meta.env.VITE_ETHERSCAN_API_KEY || 'YourApiKeyToken';
+      const BSCSCAN_API_KEY = import.meta.env.VITE_BSCSCAN_API_KEY || 'YourApiKeyToken';
+      const POLYGONSCAN_API_KEY = import.meta.env.VITE_POLYGONSCAN_API_KEY || 'YourApiKeyToken';
       const SOLANA_RPC_URL = 'https://api.mainnet-beta.solana.com';
 
       const fetchedHoldings: TokenHolding[] = [];
@@ -118,8 +118,9 @@ export default function CrossChainPortfolio({ walletAddress, onConnectWallet }: 
         console.warn("API fetch failed, falling back to mock data", apiError);
       }
 
-      // If APIs fail or return empty (e.g., invalid address format for a specific chain), use mock data to demonstrate the UI
+      // If APIs return empty, show demo data clearly labelled as such
       if (fetchedHoldings.length === 0) {
+        setUsingMockData(true);
         const mockHoldings: TokenHolding[] = [
           {
             id: 'eth', symbol: 'ETH', name: 'Ethereum', chain: 'Ethereum', balance: 1.5, priceUsd: 3450.20, valueUsd: 5175.30, change24h: 1.2, isStable: false,
@@ -144,6 +145,7 @@ export default function CrossChainPortfolio({ walletAddress, onConnectWallet }: 
         ];
         setHoldings(mockHoldings);
       } else {
+        setUsingMockData(false);
         setHoldings(fetchedHoldings);
       }
 
@@ -254,6 +256,13 @@ export default function CrossChainPortfolio({ walletAddress, onConnectWallet }: 
         <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-sm flex items-center gap-3">
           <i className="fa-solid fa-triangle-exclamation"></i>
           {error}
+        </div>
+      )}
+
+      {usingMockData && holdings.length > 0 && (
+        <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-bold">
+          <i className="fa-solid fa-flask-vial"></i>
+          Demo data — no real holdings found for this address. Connect a wallet or enter an address with on-chain activity to see live data.
         </div>
       )}
 

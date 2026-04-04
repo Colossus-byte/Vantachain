@@ -59,8 +59,12 @@ const [walletState, setWalletState] = useState<WalletState | null>(null);
   }, []);
 
   const [localProgress, setLocalProgress] = useState<UserProgress>(() => {
-    const saved = localStorage.getItem('clarix_v1_state');
-    if (saved) return JSON.parse(saved);
+    try {
+      const saved = localStorage.getItem('clarix_v1_state');
+      if (saved) return JSON.parse(saved);
+    } catch {
+      // corrupted localStorage — start fresh
+    }
     return { 
       completedSubtopics: [], 
       completedTopics: [],
@@ -105,7 +109,7 @@ const [walletState, setWalletState] = useState<WalletState | null>(null);
 
   const addNotification = (title: string, message: string, type: ProtocolNotification['type'] = 'info') => {
     const newNotif: ProtocolNotification = {
-      id: Math.random().toString(),
+      id: crypto.randomUUID(),
       title,
       message,
       type,
@@ -273,10 +277,22 @@ useEffect(() => {
     return <SignupPage
       onWalletConnect={(address) => {
         const did = `did:ethr:${address}`;
-        const saved = localStorage.getItem(`clarix_v1_state_${did}`);
-        if (saved) {
-          setProgress(JSON.parse(saved));
-        } else {
+        try {
+          const saved = localStorage.getItem(`clarix_v1_state_${did}`);
+          if (saved) {
+            setProgress(JSON.parse(saved));
+          } else {
+            setProgress(p => ({
+              ...p,
+              onboarded: true,
+              isPro: false,
+              walletAddress: address,
+              did,
+              username: 'Web3User'
+            }));
+          }
+        } catch {
+          // corrupted localStorage — init fresh wallet session
           setProgress(p => ({
             ...p,
             onboarded: true,
