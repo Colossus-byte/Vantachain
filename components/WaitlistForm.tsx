@@ -5,6 +5,18 @@ import firebaseConfig from '../firebase-applet-config.json';
 
 const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
 const db = getFirestore(app);
+// ── DEBUG ───────────────────────────────────────────────────────────────────
+// WARNING: This getFirestore(app) call uses NO databaseId argument, so it
+// writes to the DEFAULT Firestore database.  The rest of the app uses
+// getFirestore(app, firebaseConfig.firestoreDatabaseId) which writes to the
+// NAMED database "ai-studio-558d5afe-c43a-45c5-8e42-ae1f50665518".
+// Waitlist entries will appear in the DEFAULT database, not the named one.
+console.warn(
+  '[WaitlistForm] Firestore instance: DEFAULT database (no databaseId passed).',
+  'The rest of the app writes to the NAMED database.',
+  'Waitlist documents will appear under the (default) database in the Firebase Console, not the named one.'
+);
+// ────────────────────────────────────────────────────────────────────────────
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -43,18 +55,22 @@ const WaitlistForm: React.FC = () => {
 
     try {
       // Duplicate check
+      console.log('[WaitlistForm] Checking for duplicate email in waitlist (DEFAULT db)...');
       const q = query(collection(db, 'waitlist'), where('email', '==', trimmed));
       const existing = await getDocs(q);
       if (!existing.empty) {
+        console.log('[WaitlistForm] Duplicate found — not writing');
         setStatus('error');
         setErrorMessage("You're already on the list!");
         return;
       }
 
+      console.log('[WaitlistForm] WRITE → waitlist (addDoc, DEFAULT db)', { email: trimmed });
       await addDoc(collection(db, 'waitlist'), {
         email: trimmed,
         createdAt: serverTimestamp(),
       });
+      console.log('[WaitlistForm] WRITE ✓ waitlist success');
 
       setStatus('success');
       if (count !== null) setCount(count + 1);
@@ -64,6 +80,7 @@ const WaitlistForm: React.FC = () => {
         window.dispatchEvent(new PopStateEvent('popstate'));
       }, 2000);
     } catch (error: any) {
+      console.error('[WaitlistForm] WRITE ✗ waitlist failed', error);
       setStatus('error');
       setErrorMessage(error.message || 'Failed to join waitlist. Please try again.');
     }

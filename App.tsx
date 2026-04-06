@@ -243,18 +243,26 @@ useEffect(() => {
       const displayId = progress.walletAddress
         ? `${progress.walletAddress.slice(0, 6)}...${progress.walletAddress.slice(-4)}`
         : `${rawId.slice(0, 8)}`;
+      console.log('[App] WRITE → activity_feed (addDoc)', { displayId, lessonTitle, topicTitle });
       await addDoc(collection(db, 'activity_feed'), {
         displayId,
         lessonTitle,
         topicTitle,
         timestamp: serverTimestamp(),
       });
-    } catch { /* non-critical */ }
+      console.log('[App] WRITE ✓ activity_feed success');
+    } catch (e) {
+      console.error('[App] WRITE ✗ activity_feed failed', e);
+    }
   };
 
   const writeLeaderboard = async (newXP: number) => {
-    if (!user) return;
+    if (!user) {
+      console.log('[App] writeLeaderboard skipped — no authenticated user');
+      return;
+    }
     try {
+      console.log(`[App] WRITE → leaderboard/${user.uid}`, { username: progress.username, xp: newXP });
       await setDoc(doc(db, 'leaderboard', user.uid), {
         username: progress.username,
         xp: newXP,
@@ -263,21 +271,31 @@ useEffect(() => {
         completedLessons: progress.completedSubtopics.length,
         updatedAt: serverTimestamp(),
       }, { merge: true });
-    } catch { /* non-critical */ }
+      console.log(`[App] WRITE ✓ leaderboard/${user.uid} success`);
+    } catch (e) {
+      console.error(`[App] WRITE ✗ leaderboard/${user.uid} failed`, e);
+    }
   };
 
   const registerWallet = async (address: string, username: string) => {
     try {
       const docRef = doc(db, 'wallet_registrations', address.toLowerCase());
+      console.log(`[App] WRITE → wallet_registrations/${address.toLowerCase()} (checking first)`);
       const snap = await getDoc(docRef);
       if (!snap.exists()) {
+        console.log(`[App] WRITE → wallet_registrations/${address.toLowerCase()} (new entry)`);
         await setDoc(docRef, {
           address: address.toLowerCase(),
           connectedAt: serverTimestamp(),
           username,
         });
+        console.log(`[App] WRITE ✓ wallet_registrations/${address.toLowerCase()} success`);
+      } else {
+        console.log(`[App] wallet_registrations/${address.toLowerCase()} already exists — skipped`);
       }
-    } catch { /* non-critical */ }
+    } catch (e) {
+      console.error(`[App] WRITE ✗ wallet_registrations failed`, e);
+    }
   };
 
   const awardCredential = async (credentialId: string, showImmediately = true) => {
@@ -307,6 +325,7 @@ useEffect(() => {
     // Write to Firestore user subcollection
     if (user) {
       try {
+        console.log(`[App] WRITE → users/${user.uid}/credentials/${credentialId}`);
         await setDoc(doc(db, 'users', user.uid, 'credentials', credentialId), {
           id: credentialId,
           earnedAt,
@@ -315,14 +334,21 @@ useEffect(() => {
           username: progress.username,
           credentialName: def.name,
         });
-      } catch { /* non-critical */ }
+        console.log(`[App] WRITE ✓ users/${user.uid}/credentials/${credentialId} success`);
+      } catch (e) {
+        console.error(`[App] WRITE ✗ users/${user.uid}/credentials/${credentialId} failed`, e);
+      }
+    } else {
+      console.warn(`[App] Credential "${credentialId}" earned but no authenticated user — Firestore write skipped`);
     }
 
     // Write to public_credentials for verification page
     if (progress.walletAddress) {
+      const pubDocId = `${progress.walletAddress.toLowerCase()}_${credentialId}`;
       try {
+        console.log(`[App] WRITE → public_credentials/${pubDocId}`);
         await setDoc(
-          doc(db, 'public_credentials', `${progress.walletAddress.toLowerCase()}_${credentialId}`),
+          doc(db, 'public_credentials', pubDocId),
           {
             walletAddress: progress.walletAddress.toLowerCase(),
             credentialName: def.name,
@@ -332,7 +358,10 @@ useEffect(() => {
             uid: user?.uid ?? null,
           }
         );
-      } catch { /* non-critical */ }
+        console.log(`[App] WRITE ✓ public_credentials/${pubDocId} success`);
+      } catch (e) {
+        console.error(`[App] WRITE ✗ public_credentials/${pubDocId} failed`, e);
+      }
     }
 
     addNotification('Credential Earned!', `You've earned the "${def.name}" credential!`, 'success');

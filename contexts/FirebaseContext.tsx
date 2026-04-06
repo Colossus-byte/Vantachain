@@ -39,6 +39,18 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     testConnection();
 
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      // ── DEBUG ──
+      if (currentUser) {
+        console.log('[FirebaseContext] Auth state: signed in', {
+          uid: currentUser.uid,
+          email: currentUser.email,
+          isAnonymous: currentUser.isAnonymous,
+          provider: currentUser.providerData.map(p => p.providerId),
+        });
+      } else {
+        console.log('[FirebaseContext] Auth state: signed out — Firestore writes will be skipped for user-owned docs');
+      }
+      // ──────────
       setUser(currentUser);
       setIsAuthReady(true);
     });
@@ -51,11 +63,19 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     if (user) {
       const docRef = doc(db, 'users', user.uid);
+      console.log(`[FirebaseContext] Subscribing to Firestore: users/${user.uid}`);
       const unsubscribe = onSnapshot(docRef, (docSnap) => {
+        // ── DEBUG ──
+        console.log(`[FirebaseContext] onSnapshot fired for users/${user.uid}`, {
+          exists: docSnap.exists(),
+          dataKeys: docSnap.exists() ? Object.keys(docSnap.data()) : 'none',
+        });
+        // ──────────
         if (docSnap.exists()) {
           setProgress(docSnap.data() as UserProgress);
         }
       }, (error) => {
+        console.error(`[FirebaseContext] onSnapshot error for users/${user.uid}`, error);
         handleFirestoreError(error, OperationType.GET, `users/${user.uid}`);
       });
 
@@ -67,11 +87,17 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const updateProgress = async (updates: Partial<UserProgress>) => {
     const currentUser = auth.currentUser;
-    if (!currentUser) return;
+    if (!currentUser) {
+      console.warn('[FirebaseContext] updateProgress called but no authenticated user — write skipped');
+      return;
+    }
     try {
       const docRef = doc(db, 'users', currentUser.uid);
+      console.log(`[FirebaseContext] WRITE → users/${currentUser.uid}`, { keys: Object.keys(updates) });
       await setDoc(docRef, updates, { merge: true });
+      console.log(`[FirebaseContext] WRITE ✓ users/${currentUser.uid} success`);
     } catch (error) {
+      console.error(`[FirebaseContext] WRITE ✗ users/${currentUser.uid} failed`, error);
       handleFirestoreError(error, OperationType.WRITE, `users/${currentUser.uid}`);
     }
   };
