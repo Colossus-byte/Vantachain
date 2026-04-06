@@ -9,9 +9,10 @@ import { signOut } from 'firebase/auth';
 interface ProfileViewProps {
   progress: UserProgress;
   onUpdate: (updates: Partial<UserProgress>) => void;
+  onReplayTour?: () => void;
 }
 
-const ProfileView: React.FC<ProfileViewProps> = ({ progress, onUpdate }) => {
+const ProfileView: React.FC<ProfileViewProps> = ({ progress, onUpdate, onReplayTour }) => {
   const [username, setUsername] = useState(progress.username);
   const [bio, setBio] = useState(progress.bio);
   const [selectedAvatar, setSelectedAvatar] = useState(progress.avatarUrl);
@@ -257,6 +258,25 @@ const ProfileView: React.FC<ProfileViewProps> = ({ progress, onUpdate }) => {
                 </button>
               </div>
             </div>
+
+            {/* Replay Tour */}
+            {onReplayTour && (
+              <div className="p-4 md:p-6 rounded-xl md:rounded-2xl border border-white/[0.06] bg-white/[0.02] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mt-8">
+                <div className="flex items-center gap-4">
+                  <i className="fa-solid fa-route text-cyan-400 text-lg"></i>
+                  <div>
+                    <h4 className="text-[10px] md:text-xs font-black text-white uppercase tracking-widest mb-1">Feature Tour</h4>
+                    <p className="text-[10px] md:text-xs text-slate-500">Replay the guided walkthrough of Clarix Protocol features.</p>
+                  </div>
+                </div>
+                <button
+                  onClick={onReplayTour}
+                  className="px-4 py-2 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 font-bold text-[10px] uppercase tracking-widest rounded-lg border border-cyan-500/20 transition-colors whitespace-nowrap"
+                >
+                  Replay Tour
+                </button>
+              </div>
+            )}
 
             {progress.walletAddress && (
               <div className="p-4 md:p-6 rounded-xl md:rounded-2xl border border-rose-500/20 bg-rose-500/5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 md:gap-6 mt-8">

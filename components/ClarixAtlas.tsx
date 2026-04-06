@@ -9,6 +9,7 @@ const DIFFICULTY_LABELS: Record<Difficulty, string> = {
   [Difficulty.FUNDAMENTAL]: 'Level 2: Practical',
   [Difficulty.MID]:         'Level 3: Intermediate',
   [Difficulty.PRO]:         'Level 4: Advanced',
+  [Difficulty.ADVANCED]:    'Level 5: Expert',
 };
 
 const LEVEL_ICONS: Record<Difficulty, string> = {
@@ -16,6 +17,7 @@ const LEVEL_ICONS: Record<Difficulty, string> = {
   [Difficulty.FUNDAMENTAL]: 'fa-graduation-cap',
   [Difficulty.MID]:         'fa-chart-line',
   [Difficulty.PRO]:         'fa-crown',
+  [Difficulty.ADVANCED]:    'fa-bolt',
 };
 
 interface ClarixAtlasProps {

@@ -3,7 +3,8 @@ export enum Difficulty {
   BASIC = 'BASIC',
   FUNDAMENTAL = 'FUNDAMENTAL',
   MID = 'MID',
-  PRO = 'PRO'
+  PRO = 'PRO',
+  ADVANCED = 'ADVANCED'
 }
 
 export enum Language {

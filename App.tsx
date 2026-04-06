@@ -53,6 +53,7 @@ import StreakBadge from './components/StreakBadge';
 import AdminPage from './components/AdminPage';
 import CredentialCelebration from './components/CredentialCelebration';
 import VerifyPage from './components/VerifyPage';
+import OnboardingTour, { TOUR_STORAGE_KEY } from './components/OnboardingTour';
 
 const AppContent: React.FC = () => {
   const { t: tTerm, Term } = useTerminology();
@@ -179,6 +180,8 @@ const handleWalletDisconnected = () => {
   } | null>(null);
   // Credential queued to show AFTER the level celebration dismisses
   const [pendingCredentialId, setPendingCredentialId] = useState<string | null>(null);
+  // Onboarding tour
+  const [showTour, setShowTour] = useState(false);
 
   useEffect(() => {
     const storageKey = progress.did ? `clarix_v1_state_${progress.did}` : 'clarix_v1_state';
@@ -294,10 +297,11 @@ useEffect(() => {
         .slice(0, 32);
     } catch { /* crypto not available */ }
 
-    // Update local progress immediately
+    // Update local progress immediately (award 25 tokens per credential)
     setProgress(p => ({
       ...p,
       earnedCredentialIds: [...(p.earnedCredentialIds || []), credentialId],
+      tokenBalance: p.tokenBalance + 25,
     }));
 
     // Write to Firestore user subcollection
@@ -344,13 +348,17 @@ useEffect(() => {
   const handleNext = () => {
     const isLastSubtopic = progress.currentSubtopicIndex === currentTopic.subtopics.length - 1;
 
-    // Award XP + update streak for this lesson
-    const XP_PER_LESSON = 50;
+    // Award XP + tokens + update streak for this lesson
+    const XP_PER_LESSON = 20;
+    const TOKENS_PER_LESSON = 2;
     setProgress(prev => {
       const streakUpdates = computeStreakUpdates(prev);
       const newXP = (prev.xp || 0) + XP_PER_LESSON;
       const newCompleted = [...new Set([...prev.completedSubtopics, currentSubtopic.id])];
-      const updates = { ...streakUpdates, xp: newXP, completedSubtopics: newCompleted };
+      // Award 1 bonus token when streak increments (new day)
+      const streakBonus = streakUpdates.streak > prev.streak ? 1 : 0;
+      const newTokens = prev.tokenBalance + TOKENS_PER_LESSON + streakBonus;
+      const updates = { ...streakUpdates, xp: newXP, completedSubtopics: newCompleted, tokenBalance: newTokens };
       writeLeaderboard(newXP);
 
       // Check streak credentials based on the NEW streak value
@@ -387,13 +395,14 @@ useEffect(() => {
       const currentIndex = TOPICS.findIndex(t => t.id === currentTopic.id);
       const nextTopic = TOPICS[currentIndex + 1];
       const newCompletedTopics = [...new Set([...progress.completedTopics, currentTopic.id])];
-      const XP_LEVEL_BONUS = 200;
+      const XP_LEVEL_BONUS = 50;
+      const PERFECT_SCORE_BONUS = score === total ? 5 : 0;
       const newXP = (progress.xp || 0) + XP_LEVEL_BONUS;
 
       const updatedProgress = {
         ...progress,
         completedTopics: newCompletedTopics,
-        tokenBalance: progress.tokenBalance + currentTopic.rewardTokens,
+        tokenBalance: progress.tokenBalance + currentTopic.rewardTokens + PERFECT_SCORE_BONUS,
         currentTopicId: nextTopic?.id || progress.currentTopicId,
         currentSubtopicIndex: 0,
         vantaRank: progress.vantaRank + 1,
@@ -410,15 +419,17 @@ useEffect(() => {
         awardCredential(credDef.id, false);
       }
 
+      const totalTokensEarned = currentTopic.rewardTokens + PERFECT_SCORE_BONUS;
       setCelebrationData({
         topicTitle: currentTopic.title,
         xpEarned: XP_LEVEL_BONUS,
-        tokensEarned: currentTopic.rewardTokens,
+        tokensEarned: totalTokensEarned,
         nextTopicTitle: nextTopic?.title,
       });
       setShowCelebration(true);
 
-      addNotification('Level Complete!', `+${XP_LEVEL_BONUS} XP  ·  +${currentTopic.rewardTokens} $PATH tokens earned!`, 'success');
+      const perfectMsg = PERFECT_SCORE_BONUS > 0 ? `  ·  +5 perfect score bonus` : '';
+      addNotification('Level Complete!', `+${XP_LEVEL_BONUS} XP  ·  +${totalTokensEarned} $PATH tokens${perfectMsg}`, 'success');
       generateNewRecommendation(updatedProgress);
     }
     setIsQuizMode(false);
@@ -437,8 +448,13 @@ useEffect(() => {
   };
 
   const finishOnboarding = (username: string, avatarUrl: string, bio: string, role: string, guild: Guild) => {
-    setProgress(p => ({ ...p, onboarded: true, username, avatarUrl, bio, guild }));
+    // Award 1 token for first login
+    setProgress(p => ({ ...p, onboarded: true, username, avatarUrl, bio, guild, tokenBalance: p.tokenBalance + 1 }));
     setShowManifesto(true);
+    // Show tour after manifesto for first-time users
+    if (!localStorage.getItem(TOUR_STORAGE_KEY)) {
+      setTimeout(() => setShowTour(true), 800);
+    }
   };
 
   const togglePrivacy = () => {
@@ -653,7 +669,7 @@ useEffect(() => {
             <div className="hidden md:block">
               <StreakBadge streak={progress.streak || 0} lastActiveDate={progress.lastActiveDate || ''} xp={progress.xp || 0} />
             </div>
-            <div className="flex items-center gap-1.5 md:gap-2 bg-indigo-500/10 px-3 py-1.5 rounded-lg border border-indigo-500/20">
+            <div data-tour="token-balance" className="flex items-center gap-1.5 md:gap-2 bg-indigo-500/10 px-3 py-1.5 rounded-lg border border-indigo-500/20">
               <i className="fa-solid fa-coins text-indigo-400 text-xs"></i>
               <span className="text-sm font-semibold text-white">{progress.tokenBalance.toLocaleString()}</span>
               <span className="text-[10px] text-indigo-400/70 font-medium">$PATH</span>
@@ -779,7 +795,7 @@ useEffect(() => {
             />
           )}
           {activeView === 'certification' && <CertificationHub progress={progress} />}
-          {activeView === 'profile' && <ProfileView progress={progress} onUpdate={(u) => setProgress(p => ({ ...p, ...u }))} />}
+          {activeView === 'profile' && <ProfileView progress={progress} onUpdate={(u) => setProgress(p => ({ ...p, ...u }))} onReplayTour={() => { localStorage.removeItem(TOUR_STORAGE_KEY); setShowTour(true); }} />}
         </div>
 
         {/* IPFS Footer Badge */}
@@ -820,6 +836,11 @@ useEffect(() => {
           'Beginner (no credentials yet)'
         }
         topCoinsSummary={undefined}
+      />
+
+      <OnboardingTour
+        isVisible={showTour}
+        onComplete={() => setShowTour(false)}
       />
     </div>
   );

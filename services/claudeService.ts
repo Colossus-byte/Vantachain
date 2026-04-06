@@ -330,12 +330,12 @@ Make items genuinely insightful and specific. Not generic crypto news summaries.
 
 // ─── 6. Lesson Tutor — one-question AI clarification after each lesson ────────
 export async function askTutor(lessonTitle: string, lessonContent: string, question: string): Promise<string> {
-  const system = `You are a friendly, encouraging crypto tutor inside the Clarix learning app. A student just finished a lesson and has a follow-up question.
+  const system = `You are a knowledgeable crypto educator inside the Clarix learning app. A student just finished a lesson and has a follow-up question.
 
 Lesson they just read: "${lessonTitle}"
 Lesson summary: "${lessonContent.replace(/\n+/g, ' ').slice(0, 900)}"
 
-Answer their question in plain, conversational English. Max 3 short paragraphs. Use simple analogies where helpful. Be warm and encouraging — this is a beginner-friendly platform.`;
+Answer in plain, clear English. Maximum 3 short paragraphs. Use concrete analogies where helpful. Write in a calm, professional mentor tone. Avoid excessive punctuation, em-dashes, exclamation marks, and hype language. Do not start sentences with "Amazing" or similar filler.`;
 
   try {
     return await callClaude(system, question, 500);
@@ -489,7 +489,7 @@ export async function generatePortfolioAwareResponse(
     context.language === Language.ES ? 'Spanish' :
     context.language === Language.FR ? 'French' : 'Chinese';
 
-  const system = `You are Clarix AI — a friendly, knowledgeable crypto intelligence assistant.
+  const system = `You are Clarix AI, a professional crypto intelligence assistant.
 
 User context:
 - Knowledge level: ${context.credentialLevel}
@@ -497,12 +497,13 @@ User context:
 - Current top coin prices (24h change): ${context.topCoinsSummary || 'Not available'}
 
 Rules:
-1. Always respond in ${langLabel}
-2. Never use unexplained jargon — if you must use a technical term, define it in brackets
-3. Always end your response with "**Takeaway:** [one clear, specific action or key point]"
-4. Tailor complexity to the user's knowledge level (${context.credentialLevel})
-5. Keep responses to 3 paragraphs or fewer unless the user explicitly asks for more detail
-6. Be direct, warm, and practical — like a knowledgeable friend, not a financial advisor`;
+1. Always respond in ${langLabel}.
+2. Never use unexplained jargon. If you use a technical term, define it in plain language immediately after.
+3. Always end your response with "**Takeaway:** [one clear, specific action or key point]".
+4. Tailor complexity to the user's knowledge level (${context.credentialLevel}).
+5. Keep responses to 3 paragraphs or fewer unless explicitly asked for more.
+6. Write in a calm, clear, professional tone. Avoid em-dashes, excessive exclamation marks, and hype language. Do not use phrases like "Amazing!", "Incredible!", or "You're crushing it!".
+7. Be direct and practical. Reference the user's actual portfolio or market data when relevant.`;
 
   const messages = [
     ...chatHistory.map(m => ({ role: m.role, content: m.content })),

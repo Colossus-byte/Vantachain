@@ -105,6 +105,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             return (
               <button
                 key={item.id}
+                data-tour={`nav-${item.id}`}
                 onClick={() => onSelectView(item.id)}
                 className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-[13px] font-medium transition-all duration-150 relative group ${
                   isActive
