@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getReferralStats, ReferralStats } from '../services/referralService';
+import { trackEvent } from '../services/analyticsService';
 
 interface ReferralCardProps {
   referralCode: string | undefined;
@@ -28,6 +29,7 @@ const ReferralCard: React.FC<ReferralCardProps> = ({ referralCode, walletAddress
     if (!referralLink) return;
     navigator.clipboard.writeText(referralLink).then(() => {
       setCopied(true);
+      trackEvent('referral_link_copied');
       setTimeout(() => setCopied(false), 2000);
     });
   };
@@ -48,7 +50,7 @@ const ReferralCard: React.FC<ReferralCardProps> = ({ referralCode, walletAddress
   }
 
   return (
-    <div className="p-4 md:p-6 rounded-xl md:rounded-2xl border border-cyan-500/20 bg-cyan-500/[0.03] space-y-5">
+    <div data-tour="referral-card" className="p-4 md:p-6 rounded-xl md:rounded-2xl border border-cyan-500/20 bg-cyan-500/[0.03] space-y-5">
       {/* Header */}
       <div className="flex items-center gap-3">
         <i className="fa-solid fa-share-nodes text-cyan-400 text-lg"></i>

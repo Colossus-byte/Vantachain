@@ -53,12 +53,56 @@ import StreakBadge from './components/StreakBadge';
 import AdminPage from './components/AdminPage';
 import CredentialCelebration from './components/CredentialCelebration';
 import VerifyPage from './components/VerifyPage';
-import OnboardingTour, { TOUR_STORAGE_KEY } from './components/OnboardingTour';
+import OnboardingTour, { TOUR_STORAGE_KEY, TourButton } from './components/OnboardingTour';
 import {
   captureRefParam, getPendingRef, clearPendingRef,
   ensureReferralCode, saveReferredBy,
   triggerReferralRewards, claimReferrerRewards,
 } from './services/referralService';
+import { trackEvent, setAnalyticsWallet } from './services/analyticsService';
+
+// ── Landing page with auto-triggered tour for first-time visitors ─────────────
+const LandingWithTour: React.FC = () => {
+  const [showLandingTour, setShowLandingTour] = useState(false);
+
+  useEffect(() => {
+    if (localStorage.getItem(TOUR_STORAGE_KEY)) return;
+    const t = setTimeout(() => {
+      trackEvent('onboarding_started');
+      setShowLandingTour(true);
+    }, 3000);
+    return () => clearTimeout(t);
+  }, []);
+
+  const goToSignup = () => {
+    window.history.pushState({}, '', '/signup');
+    window.dispatchEvent(new PopStateEvent('popstate'));
+  };
+
+  return (
+    <div className="min-h-screen bg-surface flex flex-col relative">
+      <div className="absolute top-4 right-4 md:top-8 md:right-8 z-50 flex items-center gap-4">
+        <NewbieToggle />
+        <button
+          onClick={goToSignup}
+          className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-full font-bold text-xs uppercase tracking-widest transition-all backdrop-blur-sm"
+        >
+          Launch App
+        </button>
+      </div>
+      <ClarixHero />
+      <div data-tour="market-overview">
+        <MarketDemo />
+      </div>
+      <TourButton onClick={() => setShowLandingTour(true)} />
+      <OnboardingTour
+        isVisible={showLandingTour}
+        onComplete={() => setShowLandingTour(false)}
+        onSkip={(step) => { trackEvent('onboarding_skipped', { stepNumber: step }); setShowLandingTour(false); }}
+      />
+    </div>
+  );
+};
 
 const AppContent: React.FC = () => {
   const { t: tTerm, Term } = useTerminology();
@@ -152,12 +196,14 @@ const connectWallet = () => {
 const handleWalletConnected = (wallet: WalletState) => {
   const did = `did:ethr:${wallet.address}`;
   setWalletState(wallet);
+  setAnalyticsWallet(wallet.address);
   setProgress(p => ({
     ...p,
     walletAddress: wallet.address,
     did,
   }));
   registerWallet(wallet.address, progress.username);
+  trackEvent('wallet_connected', { chainName: wallet.chainName });
   addNotification(
     'Wallet Connected',
     `${wallet.chainName} · ${wallet.address.slice(0, 6)}...${wallet.address.slice(-4)}`,
@@ -166,6 +212,8 @@ const handleWalletConnected = (wallet: WalletState) => {
 };
 
 const handleWalletDisconnected = () => {
+  trackEvent('wallet_disconnected');
+  setAnalyticsWallet(undefined);
   setWalletState(null);
   setProgress(p => ({ ...p, walletAddress: undefined, did: undefined }));
   addNotification('Wallet Disconnected', 'Your wallet has been disconnected.', 'info');
@@ -415,6 +463,8 @@ useEffect(() => {
       }
     }
 
+    trackEvent('credential_earned', { credentialType: credentialId });
+    trackEvent('token_earned', { amount: 25, reason: 'credential_earned' });
     addNotification('Credential Earned!', `You've earned the "${def.name}" credential!`, 'success');
 
     if (showImmediately) {
@@ -428,6 +478,8 @@ useEffect(() => {
   const handleNext = () => {
     const isLastSubtopic = progress.currentSubtopicIndex === currentTopic.subtopics.length - 1;
 
+    trackEvent('lesson_completed', { moduleId: currentTopic.id, lessonId: currentSubtopic.id });
+
     // Award XP + tokens + update streak for this lesson
     const XP_PER_LESSON = 20;
     const TOKENS_PER_LESSON = 3;
@@ -440,6 +492,7 @@ useEffect(() => {
       const newTokens = prev.tokenBalance + TOKENS_PER_LESSON + streakBonus;
       const updates = { ...streakUpdates, xp: newXP, completedSubtopics: newCompleted, tokenBalance: newTokens };
       writeLeaderboard(newXP);
+      trackEvent('token_earned', { amount: TOKENS_PER_LESSON + streakBonus, reason: 'lesson_completed' });
 
       // Check streak credentials based on the NEW streak value
       const newStreak = streakUpdates.streak;
@@ -488,6 +541,7 @@ useEffect(() => {
 
   const handleQuizComplete = (score: number, total: number) => {
     if (score >= total * 0.7) {
+      trackEvent('quiz_passed', { moduleId: currentTopic.id, score, total });
       const currentIndex = TOPICS.findIndex(t => t.id === currentTopic.id);
       const nextTopic = TOPICS[currentIndex + 1];
       const newCompletedTopics = [...new Set([...progress.completedTopics, currentTopic.id])];
@@ -507,6 +561,8 @@ useEffect(() => {
 
       setProgress(updatedProgress);
       writeLeaderboard(newXP);
+      trackEvent('module_completed', { moduleId: currentTopic.id });
+      trackEvent('token_earned', { amount: currentTopic.rewardTokens + PERFECT_SCORE_BONUS, reason: 'module_completed' });
 
       // Check if a credential is awarded for completing this level
       const credDef = CREDENTIAL_DEFS.find(c => c.levelTopicId === currentTopic.id);
@@ -527,6 +583,8 @@ useEffect(() => {
       const perfectMsg = PERFECT_SCORE_BONUS > 0 ? `  ·  +5 perfect score bonus` : '';
       addNotification('Level Complete!', `+${XP_LEVEL_BONUS} XP  ·  +${totalTokensEarned} $PATH tokens${perfectMsg}`, 'success');
       generateNewRecommendation(updatedProgress);
+    } else {
+      trackEvent('quiz_failed', { moduleId: currentTopic.id, score, total });
     }
     setIsQuizMode(false);
   };
@@ -544,6 +602,7 @@ useEffect(() => {
   };
 
   const finishOnboarding = (username: string, avatarUrl: string, bio: string, role: string, guild: Guild) => {
+    trackEvent('onboarding_completed', { guild });
     // Award 1 token for first login
     setProgress(p => ({ ...p, onboarded: true, username, avatarUrl, bio, guild, tokenBalance: p.tokenBalance + 1 }));
     setShowManifesto(true);
@@ -618,22 +677,7 @@ useEffect(() => {
 
   if (isLanding && !progress.onboarded) {
     return (
-      <div className="min-h-screen bg-surface flex flex-col relative">
-        <div className="absolute top-4 right-4 md:top-8 md:right-8 z-50 flex items-center gap-4">
-          <NewbieToggle />
-          <button 
-            onClick={() => {
-              window.history.pushState({}, '', '/signup');
-              window.dispatchEvent(new PopStateEvent('popstate'));
-            }}
-            className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-full font-bold text-xs uppercase tracking-widest transition-all backdrop-blur-sm"
-          >
-            Launch App
-          </button>
-        </div>
-        <ClarixHero />
-        <MarketDemo />
-      </div>
+      <LandingWithTour />
     );
   }
 
@@ -905,9 +949,9 @@ useEffect(() => {
         </div>
       </main>
 
-      <div 
+      <div
         onClick={() => setIsAiOpen(!isAiOpen)}
-        className={`fixed right-5 md:right-6 bottom-5 md:bottom-8 w-12 h-12 md:w-14 md:h-14 rounded-xl flex items-center justify-center cursor-pointer transition-all duration-300 z-[50] shadow-lg ${
+        className={`fixed right-5 md:right-6 bottom-5 md:bottom-8 w-12 h-12 md:w-14 md:h-14 rounded-xl flex items-center justify-center cursor-pointer transition-all duration-300 z-[8001] shadow-lg ${
           isAiOpen ? 'bg-white/10 text-white border border-white/20 scale-95' : 'bg-indigo-500 text-white shadow-indigo-500/30 hover:bg-indigo-400 hover:scale-105'
         }`}
       >
@@ -934,9 +978,12 @@ useEffect(() => {
         topCoinsSummary={undefined}
       />
 
+      <TourButton onClick={() => { localStorage.removeItem(TOUR_STORAGE_KEY); setShowTour(true); }} />
+
       <OnboardingTour
         isVisible={showTour}
         onComplete={() => setShowTour(false)}
+        onSkip={(step) => trackEvent('onboarding_skipped', { stepNumber: step })}
       />
     </div>
   );

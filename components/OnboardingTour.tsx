@@ -1,64 +1,85 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 
-const TOUR_STORAGE_KEY = 'clarix_tour_complete';
+export const TOUR_STORAGE_KEY = 'clarix_tour_complete';
 
 interface TourStep {
   title: string;
   description: string;
   targetSelector: string | null; // null = centered modal
-  tooltipPosition: 'top' | 'bottom' | 'right' | 'center';
+  tooltipPosition: 'top' | 'bottom' | 'right' | 'left' | 'center';
   icon: string;
 }
 
 const TOUR_STEPS: TourStep[] = [
   {
     title: 'Welcome to Clarix Protocol',
-    description: 'This quick tour will walk you through the key features. You can skip at any time and replay from your Profile.',
+    description: 'This quick tour walks you through every major feature. You can skip at any time and replay from your Profile whenever you like.',
     targetSelector: null,
     tooltipPosition: 'center',
     icon: 'fa-hand-wave',
   },
   {
-    title: '$PATH Token Balance',
-    description: 'You earn $PATH tokens by completing lessons, finishing modules, maintaining daily streaks, and earning credentials. Tokens are scarce — every lesson rewards 2–3, and credentials award 25.',
-    targetSelector: '[data-tour="token-balance"]',
+    title: 'Live Market Overview',
+    description: 'Real-time crypto prices, AI-generated sentiment signals, and on-chain data — all on the landing page before you even sign in.',
+    targetSelector: '[data-tour="market-overview"]',
     tooltipPosition: 'bottom',
-    icon: 'fa-coins',
+    icon: 'fa-chart-line',
   },
   {
-    title: 'Knowledge Atlas',
-    description: 'The Academy is your curriculum hub — 10 modules covering Crypto Foundations through Advanced DeFi. Each lesson takes 10–15 minutes and ends with an AI-generated quiz.',
+    title: 'Knowledge Atlas — 10 Modules',
+    description: 'Start with Crypto Foundations and work through 10 full modules covering DeFi, security, NFTs, governance and more. Every lesson earns you 3 $PATH tokens.',
     targetSelector: '[data-tour="nav-academy"]',
     tooltipPosition: 'right',
     icon: 'fa-graduation-cap',
   },
   {
-    title: 'Live Market Intelligence',
-    description: 'Market Intel surfaces real-time price data, AI sentiment analysis, and on-chain signals. Use it to connect what you learn to current market conditions.',
+    title: 'Portfolio Advisor',
+    description: 'Connect your wallet and the AI Portfolio Advisor analyses your on-chain holdings, scores your diversification, and suggests your next move.',
+    targetSelector: '[data-tour="nav-portfolio"]',
+    tooltipPosition: 'right',
+    icon: 'fa-briefcase',
+  },
+  {
+    title: 'Market Intel — Daily AI Brief',
+    description: 'Every day the AI synthesises price action, sentiment, and on-chain signals into a plain-English brief you can actually act on.',
     targetSelector: '[data-tour="nav-market"]',
     tooltipPosition: 'right',
-    icon: 'fa-chart-line',
+    icon: 'fa-newspaper',
+  },
+  {
+    title: 'Guild Network',
+    description: 'Join a guild — Architects, Sentinels, Arbiters, or Catalysts — to compete on the leaderboard and earn guild-exclusive $PATH rewards.',
+    targetSelector: '[data-tour="nav-guilds"]',
+    tooltipPosition: 'right',
+    icon: 'fa-shield-halved',
+  },
+  {
+    title: 'Governance DAO',
+    description: 'Spend your $PATH to vote on protocol proposals. Your knowledge directly shapes the direction of Clarix Protocol.',
+    targetSelector: '[data-tour="nav-governance"]',
+    tooltipPosition: 'right',
+    icon: 'fa-landmark',
   },
   {
     title: 'Clarix Credentials',
-    description: 'Credentials are verifiable certificates tied to your wallet. Complete a module group to earn one. Each credential comes with a shareable verification link and 25 $PATH tokens.',
+    description: 'Complete a full module group to earn a verifiable on-chain credential. Each credential awards 25 $PATH and comes with a shareable verification link.',
     targetSelector: '[data-tour="nav-certification"]',
     tooltipPosition: 'right',
     icon: 'fa-certificate',
   },
   {
-    title: 'Portfolio Advisor',
-    description: 'Connect your wallet and the AI Portfolio Advisor analyzes your on-chain holdings, suggests diversification strategies, and scores your portfolio against your knowledge level.',
-    targetSelector: '[data-tour="nav-portfolio"]',
-    tooltipPosition: 'right',
-    icon: 'fa-wallet',
+    title: 'Refer & Earn',
+    description: 'Share your unique referral link. You earn 15 $PATH every time a friend completes their first lesson. Your friend gets a 5 $PATH welcome bonus.',
+    targetSelector: '[data-tour="referral-card"]',
+    tooltipPosition: 'top',
+    icon: 'fa-share-nodes',
   },
   {
-    title: 'You\'re all set',
-    description: 'Start with Module 1: Crypto Foundations in the Academy. Complete your first lesson to earn your first $PATH tokens. You can replay this tour anytime from your Profile.',
-    targetSelector: null,
-    tooltipPosition: 'center',
-    icon: 'fa-circle-check',
+    title: 'Connect Your Wallet',
+    description: 'Connect MetaMask or any WalletConnect-compatible wallet to unlock credential minting, portfolio analysis, and on-chain identity. Free to start — no email required.',
+    targetSelector: '[data-tour="token-balance"]',
+    tooltipPosition: 'bottom',
+    icon: 'fa-wallet',
   },
 ];
 
@@ -66,8 +87,11 @@ interface TooltipCoords {
   top: number;
   left: number;
   width: number;
-  arrowSide: 'top' | 'left' | null;
+  arrowSide: 'top' | 'left' | 'bottom' | null;
 }
+
+const TOOLTIP_WIDTH = 320;
+const TOOLTIP_HEIGHT = 220;
 
 function getTooltipCoords(
   el: Element,
@@ -94,31 +118,36 @@ function getTooltipCoords(
     return { top, left: rect.right + margin, width: tooltipWidth, arrowSide: 'left' };
   }
 
+  if (position === 'left') {
+    const top = Math.min(
+      Math.max(margin, rect.top + rect.height / 2 - tooltipHeight / 2),
+      window.innerHeight - tooltipHeight - margin,
+    );
+    return { top, left: rect.left - tooltipWidth - margin, width: tooltipWidth, arrowSide: null };
+  }
+
   // top
   const left = Math.min(
     Math.max(margin, rect.left + rect.width / 2 - tooltipWidth / 2),
     window.innerWidth - tooltipWidth - margin,
   );
-  return { top: rect.top - tooltipHeight - margin, left, width: tooltipWidth, arrowSide: 'top' };
+  return { top: rect.top - tooltipHeight - margin, left, width: tooltipWidth, arrowSide: 'bottom' };
 }
 
 interface Props {
   isVisible: boolean;
   onComplete: () => void;
+  onSkip?: (stepNumber: number) => void;
 }
 
-const TOOLTIP_WIDTH = 320;
-const TOOLTIP_HEIGHT = 200; // estimate for positioning math
-
-const OnboardingTour: React.FC<Props> = ({ isVisible, onComplete }) => {
+const OnboardingTour: React.FC<Props> = ({ isVisible, onComplete, onSkip }) => {
   const [step, setStep] = useState(0);
   const [coords, setCoords] = useState<TooltipCoords | null>(null);
   const prevHighlightedEl = useRef<Element | null>(null);
 
   const current = TOUR_STEPS[step];
 
-  const applyHighlight = useCallback((selector: string | null) => {
-    // Remove previous highlight
+  const applyHighlight = useCallback((selector: string | null, position: TourStep['tooltipPosition']) => {
     if (prevHighlightedEl.current) {
       prevHighlightedEl.current.classList.remove('tour-highlight');
       prevHighlightedEl.current = null;
@@ -138,9 +167,9 @@ const OnboardingTour: React.FC<Props> = ({ isVisible, onComplete }) => {
     el.classList.add('tour-highlight');
     prevHighlightedEl.current = el;
 
-    const c = getTooltipCoords(el, current.tooltipPosition, TOOLTIP_WIDTH, TOOLTIP_HEIGHT);
+    const c = getTooltipCoords(el, position, TOOLTIP_WIDTH, TOOLTIP_HEIGHT);
     setCoords(c);
-  }, [current.tooltipPosition]);
+  }, []);
 
   useEffect(() => {
     if (!isVisible) {
@@ -150,12 +179,10 @@ const OnboardingTour: React.FC<Props> = ({ isVisible, onComplete }) => {
       }
       return;
     }
-    // Small delay to let React render before querying DOM
-    const t = setTimeout(() => applyHighlight(current.targetSelector), 50);
+    const t = setTimeout(() => applyHighlight(current.targetSelector, current.tooltipPosition), 80);
     return () => clearTimeout(t);
-  }, [isVisible, step, applyHighlight, current.targetSelector]);
+  }, [isVisible, step, applyHighlight, current.targetSelector, current.tooltipPosition]);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (prevHighlightedEl.current) {
@@ -185,31 +212,39 @@ const OnboardingTour: React.FC<Props> = ({ isVisible, onComplete }) => {
     onComplete();
   };
 
-  const handleSkip = () => handleComplete();
+  const handleSkip = () => {
+    onSkip?.(step + 1);
+    handleComplete();
+  };
 
   if (!isVisible) return null;
 
   const isCenter = current.tooltipPosition === 'center' || !coords;
   const isLast = step === TOUR_STEPS.length - 1;
 
-  // Progress dots
   const dots = TOUR_STEPS.map((_, i) => (
     <div
       key={i}
-      className={`w-1.5 h-1.5 rounded-full transition-all duration-200 ${
-        i === step ? 'bg-cyan-400 w-4' : i < step ? 'bg-cyan-400/40' : 'bg-white/10'
+      onClick={() => setStep(i)}
+      className={`h-1.5 rounded-full transition-all duration-200 cursor-pointer ${
+        i === step ? 'bg-cyan-400 w-4' : i < step ? 'bg-cyan-400/40 w-1.5' : 'bg-white/10 w-1.5'
       }`}
     />
   ));
 
   const card = (
     <div
-      className="bg-[#111827] border border-white/[0.08] rounded-2xl shadow-2xl overflow-hidden"
+      className="bg-[#0D1117] border border-white/[0.10] rounded-2xl shadow-2xl overflow-hidden relative"
       style={{ width: TOOLTIP_WIDTH }}
+      onClick={e => e.stopPropagation()}
     >
-      {/* Arrow indicator for non-center tooltips */}
+      {/* Arrow left */}
       {coords?.arrowSide === 'left' && (
-        <div className="absolute -left-2 top-1/2 -translate-y-1/2 w-3 h-3 bg-[#111827] border-l border-t border-white/[0.08] rotate-[-45deg]" />
+        <div className="absolute -left-[7px] top-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-[#0D1117] border-l border-t border-white/[0.10] rotate-[-45deg]" />
+      )}
+      {/* Arrow top */}
+      {coords?.arrowSide === 'top' && (
+        <div className="absolute left-1/2 -translate-x-1/2 -top-[7px] w-3.5 h-3.5 bg-[#0D1117] border-l border-t border-white/[0.10] rotate-45" />
       )}
 
       {/* Header */}
@@ -243,9 +278,7 @@ const OnboardingTour: React.FC<Props> = ({ isVisible, onComplete }) => {
 
       {/* Footer */}
       <div className="px-5 pb-5 flex items-center justify-between gap-3">
-        {/* Progress dots */}
-        <div className="flex items-center gap-1.5">{dots}</div>
-
+        <div className="flex items-center gap-1">{dots}</div>
         <div className="flex items-center gap-2">
           {step > 0 && (
             <button
@@ -259,7 +292,7 @@ const OnboardingTour: React.FC<Props> = ({ isVisible, onComplete }) => {
             onClick={handleNext}
             className="px-4 py-2 bg-cyan-500 hover:bg-cyan-400 text-black font-semibold text-xs rounded-lg transition-colors flex items-center gap-1.5"
           >
-            {isLast ? 'Get started' : 'Next'}
+            {isLast ? 'Finish Tour' : 'Next'}
             {!isLast && <i className="fa-solid fa-arrow-right text-[10px]"></i>}
           </button>
         </div>
@@ -270,7 +303,6 @@ const OnboardingTour: React.FC<Props> = ({ isVisible, onComplete }) => {
   if (isCenter) {
     return (
       <>
-        {/* Full-screen dim overlay for centered steps */}
         <div className="fixed inset-0 bg-[#0A0E1A]/85 z-[9000]" onClick={handleSkip} />
         <div className="fixed inset-0 z-[9002] flex items-center justify-center p-4 pointer-events-none">
           <div className="pointer-events-auto">{card}</div>
@@ -280,14 +312,32 @@ const OnboardingTour: React.FC<Props> = ({ isVisible, onComplete }) => {
   }
 
   return (
-    <div
-      className="fixed z-[9002] pointer-events-auto"
-      style={{ top: coords!.top, left: coords!.left, width: TOOLTIP_WIDTH }}
-    >
-      {card}
-    </div>
+    <>
+      <div className="fixed inset-0 bg-[#0A0E1A]/60 z-[9000]" onClick={handleSkip} />
+      <div
+        className="fixed z-[9002] pointer-events-auto"
+        style={{ top: coords!.top, left: coords!.left, width: TOOLTIP_WIDTH }}
+      >
+        {card}
+      </div>
+    </>
   );
 };
 
-export { TOUR_STORAGE_KEY };
+// ── Floating "App Tour" button — always visible ───────────────────────────────
+interface TourButtonProps {
+  onClick: () => void;
+}
+
+export const TourButton: React.FC<TourButtonProps> = ({ onClick }) => (
+  <button
+    onClick={onClick}
+    title="App Tour"
+    className="fixed bottom-5 md:bottom-8 right-20 md:right-24 z-[8000] w-10 h-10 md:w-11 md:h-11 rounded-full bg-cyan-500/90 hover:bg-cyan-400 border border-cyan-400/40 shadow-[0_0_20px_rgba(6,182,212,0.4)] flex items-center justify-center transition-all hover:scale-110 active:scale-95"
+    style={{ animation: 'tour-pulse 3s ease-in-out infinite' }}
+  >
+    <i className="fa-solid fa-map text-black text-xs"></i>
+  </button>
+);
+
 export default OnboardingTour;

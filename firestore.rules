@@ -116,6 +116,19 @@ service cloud.firestore {
       allow write: if isOwner(userId);
     }
 
+    // ── Analytics Events ──────────────────────────────────────────────────────
+    // Anyone can write analytics events (including anonymous users).
+    // Only authenticated users (admin) can read.
+    match /events/{eventId} {
+      allow create: if request.resource.data.keys().hasAll(['eventName', 'walletAddress', 'timestamp']) &&
+                       request.resource.data.eventName is string &&
+                       request.resource.data.eventName.size() <= 100 &&
+                       request.resource.data.walletAddress is string &&
+                       request.resource.data.walletAddress.size() <= 100;
+      allow read: if isAuthenticated();
+      allow update, delete: if false;
+    }
+
     // ── Referral Events ───────────────────────────────────────────────────────
     // Created by referred user on first lesson. Claimed (updated) by referrer.
     match /referral_events/{eventId} {
