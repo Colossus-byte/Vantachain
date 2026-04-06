@@ -1,20 +1,33 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
-import firebaseConfig from './firebase-applet-config.json';
+
+// Firebase config read exclusively from environment variables.
+// Set these in .env.local (never commit that file).
+// See .env.example for the full list of required variables.
+const firebaseConfig = {
+  apiKey:            (import.meta as any).env.VITE_FIREBASE_API_KEY,
+  authDomain:        (import.meta as any).env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId:         (import.meta as any).env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket:     (import.meta as any).env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: (import.meta as any).env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId:             (import.meta as any).env.VITE_FIREBASE_APP_ID,
+};
+
+if (!firebaseConfig.projectId) {
+  console.error(
+    '[Firebase] VITE_FIREBASE_PROJECT_ID is not set. ' +
+    'Copy .env.example → .env.local and fill in your Firebase project values.'
+  );
+}
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
-export const db = getFirestore(app); // uses (default) database — matches firebase.json
+export const db = getFirestore(app);
 
-// ── DEBUG: confirm which Firebase project and database are in use ──────────
-console.log('%c[Firebase] Config loaded', 'color:#00D4FF;font-weight:bold', {
-  projectId: firebaseConfig.projectId,
-  authDomain: firebaseConfig.authDomain,
-  database: '(default)',
-  appId: firebaseConfig.appId,
+console.log('%c[Firebase] Initialised', 'color:#00D4FF;font-weight:bold', {
+  projectId: firebaseConfig.projectId ?? '(missing)',
 });
-// ─────────────────────────────────────────────────────────────────────────────
 
 export enum OperationType {
   CREATE = 'create',

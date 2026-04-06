@@ -15,12 +15,13 @@ npm run lint         # Type-check only (tsc --noEmit) — no test runner configu
 ## Environment Setup
 
 Copy `.env.example` to `.env.local` and fill in:
-- `GEMINI_API_KEY` — for Gemini features (news, audio narration)
+- `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_STORAGE_BUCKET`, `VITE_FIREBASE_MESSAGING_SENDER_ID`, `VITE_FIREBASE_APP_ID` — Firebase project (clarix-protocol). Get from Firebase Console → Project Settings → Web app
 - `VITE_CLAUDE_API_KEY` — for all Claude AI features (quiz generation, AI assistant, sentiment oracle)
-- `GOOGLE_CLIENT_EMAIL`, `GOOGLE_PRIVATE_KEY`, `GOOGLE_SHEET_ID` — for waitlist form submissions via Google Sheets
+- `GEMINI_API_KEY` — for Gemini features (news, audio narration)
 - `VITE_WALLETCONNECT_PROJECT_ID` — for WalletConnect modal
+- `GOOGLE_CLIENT_EMAIL`, `GOOGLE_PRIVATE_KEY`, `GOOGLE_SHEET_ID` — for waitlist form submissions via Google Sheets
 
-Firebase config is loaded from `firebase-applet-config.json` (not env vars).
+Firebase config is read from `import.meta.env` (VITE_FIREBASE_* vars). `firebase-applet-config.json` is gitignored and no longer used.
 
 ### Firebase Authorized Domains (Google Sign-In)
 
@@ -34,7 +35,7 @@ If `auth/unauthorized-domain` still appears, the app's domain must be added to F
 2. Navigate to **Authentication** → **Settings** → **Authorized domains**
 3. Click **Add domain** and enter the domain (e.g. `clarixprotocol.com`, `localhost`, or a preview URL)
 
-This must be done for every new deployment domain. The `authDomain` in `firebase-applet-config.json` must remain as the default Firebase domain (`gen-lang-client-0629412643.firebaseapp.com`) — do not change it to the production domain unless Firebase Hosting is configured for that domain.
+This must be done for every new deployment domain. `VITE_FIREBASE_AUTH_DOMAIN` should remain as the default Firebase domain (`clarix-protocol.firebaseapp.com`) — do not change it to the production domain unless Firebase Hosting is configured for that domain.
 
 ## Architecture
 

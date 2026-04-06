@@ -8,17 +8,30 @@
  *   node scripts/user-count.mjs
  */
 
-import { readFileSync } from 'fs';
+import { readFileSync, existsSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const config = JSON.parse(readFileSync(resolve(__dirname, '../firebase-applet-config.json'), 'utf-8'));
 
-const PROJECT = config.projectId;
-const API_KEY = config.apiKey;
-const DB_ID = config.firestoreDatabaseId ?? '(default)';
-const BASE = `https://firestore.googleapis.com/v1/projects/${PROJECT}/databases/${encodeURIComponent(DB_ID)}/documents`;
+// Load .env.local if present so the script can run without setting shell vars
+const envPath = resolve(__dirname, '../.env.local');
+if (existsSync(envPath)) {
+  readFileSync(envPath, 'utf-8').split('\n').forEach(line => {
+    const m = line.match(/^([^#=\s][^=]*)=(.*)$/);
+    if (m) process.env[m[1].trim()] = m[2].trim().replace(/^["']|["']$/g, '');
+  });
+}
+
+const PROJECT = process.env.VITE_FIREBASE_PROJECT_ID;
+const API_KEY  = process.env.VITE_FIREBASE_API_KEY;
+
+if (!PROJECT || !API_KEY) {
+  console.error('Missing VITE_FIREBASE_PROJECT_ID or VITE_FIREBASE_API_KEY in .env.local');
+  process.exit(1);
+}
+
+const BASE = `https://firestore.googleapis.com/v1/projects/${PROJECT}/databases/(default)/documents`;
 
 async function listCollection(name, pageSize = 300) {
   const docs = [];
