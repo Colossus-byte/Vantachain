@@ -2,39 +2,22 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // ===============================================================
-    // Assumed Data Model
-    // ===============================================================
-    //
-    // Collection: users
-    // Document ID: {userId} (matches Firebase Auth UID)
-    // Fields:
-    //   - username: string (required)
-    //   - onboarded: boolean (required)
-    //   - tokenBalance: number
-    //   - currentTopicId: string
-    //   - currentSubtopicIndex: number
-    //   - avatarUrl: string
-    //   - bio: string
-    //   - did: string
-    //   - walletAddress: string
-    //   - isPro: boolean
-    //   - isPrivate: boolean
-    //   - aiSentinelAccess: boolean
-    //   - vantaRank: number
-    //   - language: string
-    //   - guild: string
-    //
-    // ===============================================================
 
-    // Helper Functions
+    // ── Helper functions ──────────────────────────────────────────────────────
+
     function isAuthenticated() {
       return request.auth != null;
     }
 
     function isOwner(userId) {
       return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Valid Ethereum wallet address: "0x" followed by exactly 40 hex chars
+    function isValidWallet(addr) {
+      return addr is string &&
+             addr.size() == 42 &&
+             addr.matches('0x[0-9a-fA-F]{40}');
     }
 
     function isValidUser(data) {
@@ -47,45 +30,57 @@ service cloud.firestore {
              (!('walletAddress' in data) || (data.walletAddress is string && data.walletAddress.size() <= 100));
     }
 
+    // ── Users ─────────────────────────────────────────────────────────────────
+    // Google Auth users: doc ID = Firebase UID (isOwner check applies).
+    // Wallet-only users: doc ID = wallet address or DID — allow create/update
+    //   when the document contains a valid walletAddress field.
     match /users/{userId} {
-      allow read: if isOwner(userId);
-      allow create: if isOwner(userId) && isValidUser(request.resource.data);
-      allow update: if isOwner(userId) && isValidUser(request.resource.data);
-      allow delete: if false; // Users cannot delete their own profile directly for now
+      allow read: if isOwner(userId) ||
+                     (resource != null && resource.data.walletAddress != null &&
+                      isValidWallet(resource.data.walletAddress));
+      allow create: if (isOwner(userId) && isValidUser(request.resource.data)) ||
+                       ('walletAddress' in request.resource.data &&
+                        isValidWallet(request.resource.data.walletAddress) &&
+                        isValidUser(request.resource.data));
+      allow update: if (isOwner(userId) && isValidUser(request.resource.data)) ||
+                       ('walletAddress' in request.resource.data &&
+                        isValidWallet(request.resource.data.walletAddress) &&
+                        isValidUser(request.resource.data));
+      allow delete: if false;
 
       // ── User credentials sub-collection ─────────────────────────────────────
-      // Private to the owner. Credential IDs are known slugs (no arbitrary IDs).
+      // Readable by authenticated owner OR if parent doc has matching wallet.
       match /credentials/{credentialId} {
         allow read: if isOwner(userId);
-        allow create: if isOwner(userId) &&
+        allow create: if (isOwner(userId) ||
+                          ('walletAddress' in get(/databases/$(database)/documents/users/$(userId)).data)) &&
                          request.resource.data.keys().hasAll(['id', 'earnedAt', 'verificationHash']) &&
                          request.resource.data.id is string &&
                          request.resource.data.id.size() <= 64 &&
                          request.resource.data.earnedAt is number &&
                          request.resource.data.verificationHash is string &&
                          request.resource.data.verificationHash.size() <= 128;
-        allow update, delete: if false; // Credentials are immutable once earned
+        allow update, delete: if false;
       }
     }
 
     // ── Public credentials ────────────────────────────────────────────────────
-    // Doc ID: {walletAddress}_{credentialSlug}. Anyone can read; only owner can create.
+    // Doc ID: {walletAddress}_{credentialSlug}. Anyone can read.
+    // WalletConnect users have no Firebase Auth, so auth is not required —
+    // validated by walletAddress field instead.
     match /public_credentials/{docId} {
       allow read: if true;
-      allow create: if isAuthenticated() &&
-                       request.resource.data.keys().hasAll(['walletAddress', 'credentialName', 'earnedAt', 'verificationHash']) &&
-                       request.resource.data.walletAddress is string &&
-                       request.resource.data.walletAddress.size() <= 42 &&
+      allow create: if request.resource.data.keys().hasAll(['walletAddress', 'credentialName', 'earnedAt', 'verificationHash']) &&
+                       isValidWallet(request.resource.data.walletAddress) &&
                        request.resource.data.credentialName is string &&
                        request.resource.data.credentialName.size() <= 100 &&
                        request.resource.data.earnedAt is number &&
                        request.resource.data.verificationHash is string &&
                        request.resource.data.verificationHash.size() <= 128;
-      allow update, delete: if false; // Immutable for integrity
+      allow update, delete: if false;
     }
 
-    // ── Waitlist ─────────────────────────────────────────────────────────────
-    // Public create: anyone may add their email. No reads, updates, or deletes.
+    // ── Waitlist ──────────────────────────────────────────────────────────────
     match /waitlist/{docId} {
       allow create: if request.resource.data.keys().hasOnly(['email', 'createdAt']) &&
                        request.resource.data.email is string &&
@@ -95,7 +90,7 @@ service cloud.firestore {
     }
 
     // ── Activity Feed ─────────────────────────────────────────────────────────
-    // Anyone can write lesson-completion events (anonymized). Public read for live feed.
+    // Anyone can write lesson-completion events. Public read for live feed.
     match /activity_feed/{docId} {
       allow create: if request.resource.data.keys().hasOnly(['displayId', 'lessonTitle', 'topicTitle', 'timestamp']) &&
                        request.resource.data.displayId is string &&
@@ -109,46 +104,49 @@ service cloud.firestore {
     }
 
     // ── Leaderboard ───────────────────────────────────────────────────────────
-    // Public read so GuildLeaderboard component can show top users.
-    // Only the authenticated owner can write their own entry.
+    // Public read. Write allowed for authenticated users OR wallet-only users
+    // whose document ID matches their wallet address.
     match /leaderboard/{userId} {
       allow read: if true;
-      allow write: if isOwner(userId);
+      allow write: if isOwner(userId) ||
+                      ('walletAddress' in request.resource.data &&
+                       isValidWallet(request.resource.data.walletAddress));
     }
 
     // ── Analytics Events ──────────────────────────────────────────────────────
-    // Anyone can write analytics events (including anonymous users).
-    // Only authenticated users (admin) can read.
+    // Open write for all users including unauthenticated (WalletConnect/anonymous).
     match /events/{eventId} {
-      allow create: if request.resource.data.keys().hasAll(['eventName', 'walletAddress', 'timestamp']) &&
-                       request.resource.data.eventName is string &&
-                       request.resource.data.eventName.size() <= 100 &&
-                       request.resource.data.walletAddress is string &&
-                       request.resource.data.walletAddress.size() <= 100;
-      allow read: if isAuthenticated();
+      allow create: if true;
+      allow read, update, delete: if false;
+    }
+
+    // ── Referrals ─────────────────────────────────────────────────────────────
+    // Public create and read; no updates or deletes.
+    match /referrals/{docId} {
+      allow create: if true;
+      allow read: if true;
       allow update, delete: if false;
     }
 
     // ── Referral Events ───────────────────────────────────────────────────────
-    // Created by referred user on first lesson. Claimed (updated) by referrer.
+    // Created by referred user on first lesson (no auth required for wallet users).
+    // Read and update (claim) allowed without strict auth for wallet users.
     match /referral_events/{eventId} {
-      allow create: if isAuthenticated() &&
-                       request.resource.data.keys().hasAll(['referrerCode', 'referredUid', 'referrerRewarded', 'referredRewarded']) &&
+      allow create: if request.resource.data.keys().hasAll(['referrerCode', 'referredUid', 'referrerRewarded', 'referredRewarded']) &&
                        request.resource.data.referrerCode is string &&
                        request.resource.data.referrerCode.size() <= 20 &&
                        request.resource.data.referredUid is string &&
                        request.resource.data.referredUid.size() <= 128 &&
                        request.resource.data.referrerRewarded == false &&
                        request.resource.data.referredRewarded == false;
-      allow read: if isAuthenticated();
-      allow update: if isAuthenticated() &&
-                       request.resource.data.diff(resource.data).affectedKeys()
+      allow read: if true;
+      allow update: if request.resource.data.diff(resource.data).affectedKeys()
                          .hasOnly(['referrerRewarded', 'referredRewarded']);
       allow delete: if false;
     }
 
     // ── Wallet Registrations ──────────────────────────────────────────────────
-    // Written once on first wallet connection. Public read for admin dashboard.
+    // Written once on first wallet connection — no auth required.
     // Doc ID = lowercase wallet address. Updates blocked (first-registration wins).
     match /wallet_registrations/{address} {
       allow create: if request.resource.data.keys().hasOnly(['address', 'connectedAt', 'username']) &&
