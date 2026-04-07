@@ -123,6 +123,14 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    // ── User Preferences ─────────────────────────────────────────────────────
+    // Lightweight per-user flags (banner dismissals, UI state).
+    // Doc ID = Firebase UID or lowercase wallet address.
+    // Non-sensitive; open read/write is acceptable.
+    match /user_prefs/{userId} {
+      allow read, write: if true;
+    }
+
     // ── Referrals ─────────────────────────────────────────────────────────────
     // Public create and read; no updates or deletes.
     match /referrals/{docId} {

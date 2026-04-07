@@ -54,6 +54,7 @@ import AdminPage from './components/AdminPage';
 import CredentialCelebration from './components/CredentialCelebration';
 import VerifyPage from './components/VerifyPage';
 import OnboardingTour, { TOUR_STORAGE_KEY, TourButton } from './components/OnboardingTour';
+import IncentiveBanner from './components/IncentiveBanner';
 import {
   captureRefParam, getPendingRef, clearPendingRef,
   ensureReferralCode, saveReferredBy,
@@ -823,6 +824,15 @@ useEffect(() => {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 md:gap-16">
               <div className="lg:col-span-12 space-y-12">
                 <WalletSummaryCard address={progress.walletAddress} onConnect={connectWallet} />
+                <IncentiveBanner
+                  uid={user?.uid}
+                  walletAddress={progress.walletAddress}
+                  completedSubtopics={progress.completedSubtopics}
+                  onStartLesson={() => {
+                    // Scroll the lesson content into view
+                    document.querySelector('.animate-in')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }}
+                />
                 {!isQuizMode && (recommendation || isGeneratingRecommendation) && (
                   <NeuralRoadmap 
                     recommendation={recommendation} 
