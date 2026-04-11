@@ -548,6 +548,10 @@ useEffect(() => {
   };
 
   const handleNext = () => {
+    if (progress.onboardingSkipped) {
+      addNotification('Complete Setup First', 'Finish your profile to save progress and earn XP.', 'info');
+      return;
+    }
     const isLastSubtopic = progress.currentSubtopicIndex === currentTopic.subtopics.length - 1;
 
     trackEvent('lesson_completed', { moduleId: currentTopic.id, lessonId: currentSubtopic.id });
@@ -671,12 +675,11 @@ useEffect(() => {
     }
   };
 
-  const finishOnboarding = (username: string, avatarUrl: string, bio: string, role: string, guild: Guild) => {
+  const finishOnboarding = (username: string, guild: Guild) => {
     trackEvent('onboarding_completed', { guild });
-    // Award 1 token for first login
-    setProgress(p => ({ ...p, onboarded: true, onboardingSkipped: false, username, avatarUrl, bio, guild, tokenBalance: p.tokenBalance + 1 }));
+    setProgress(p => ({ ...p, onboarded: true, onboardingSkipped: false, username, guild, xp: (p.xp || 0) + 50, tokenBalance: p.tokenBalance + 1 }));
+    addNotification('Setup Complete!', '+50 XP · +1 $PATH · Credentials unlocked!', 'success');
     setShowManifesto(true);
-    // Show tour after manifesto for first-time users
     if (!localStorage.getItem(TOUR_STORAGE_KEY)) {
       setTimeout(() => setShowTour(true), 800);
     }
@@ -789,7 +792,7 @@ useEffect(() => {
     );
   }
 
-  if (!progress.onboarded) return <Onboarding onComplete={finishOnboarding} onSkip={handleSkipOnboarding} />;
+  if (!progress.onboarded) return <Onboarding onComplete={finishOnboarding} onRemindLater={handleSkipOnboarding} />;
 
   const t = UI_TRANSLATIONS[progress.language] || UI_TRANSLATIONS[Language.EN];
 
@@ -927,32 +930,32 @@ useEffect(() => {
 
 
         <div className="flex-1 w-full max-w-6xl mx-auto px-4 md:px-12 py-6 md:py-16">
+          {progress.onboardingSkipped && (
+            <div className="relative flex flex-col sm:flex-row sm:items-center gap-4 p-4 pr-10 mb-6 rounded-2xl bg-amber-500/10 border border-amber-500/20">
+              <i className="fa-solid fa-circle-exclamation text-amber-400 text-lg shrink-0 hidden sm:block"></i>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-white">You're 2 steps from 50 XP — complete your profile</p>
+                <p className="text-xs text-slate-400 mt-0.5">Finish setup to save progress, earn XP, and unlock your Clarix Credential.</p>
+              </div>
+              <button
+                onClick={() => setProgress(p => ({ ...p, onboarded: false, onboardingSkipped: false }))}
+                className="px-4 py-2 rounded-xl bg-amber-500 text-black font-black text-xs uppercase tracking-widest hover:opacity-90 transition-all shrink-0 self-start sm:self-auto"
+              >
+                Complete Profile
+              </button>
+              <button
+                onClick={() => setProgress(p => ({ ...p, onboardingSkipped: false }))}
+                className="absolute top-3 right-3 w-6 h-6 rounded-md bg-white/5 flex items-center justify-center text-slate-500 hover:text-white transition-colors"
+                aria-label="Dismiss"
+              >
+                <i className="fa-solid fa-xmark text-xs"></i>
+              </button>
+            </div>
+          )}
           {activeView === 'academy' && (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 md:gap-16">
               <div className="lg:col-span-12 space-y-12">
                 <WalletSummaryCard address={progress.walletAddress} onConnect={connectWallet} />
-                {progress.onboardingSkipped && (
-                  <div className="relative flex flex-col sm:flex-row sm:items-center gap-4 p-4 pr-10 rounded-2xl bg-amber-500/10 border border-amber-500/20">
-                    <i className="fa-solid fa-circle-exclamation text-amber-400 text-lg shrink-0 hidden sm:block"></i>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-white">Complete your profile to earn 100 XP</p>
-                      <p className="text-xs text-slate-400 mt-0.5">Finish setup to unlock the Knowledge Atlas and your first XP bonus.</p>
-                    </div>
-                    <button
-                      onClick={() => setProgress(p => ({ ...p, onboarded: false, onboardingSkipped: false }))}
-                      className="px-4 py-2 rounded-xl bg-amber-500 text-black font-black text-xs uppercase tracking-widest hover:opacity-90 transition-all shrink-0 self-start sm:self-auto"
-                    >
-                      Complete Profile
-                    </button>
-                    <button
-                      onClick={() => setProgress(p => ({ ...p, onboardingSkipped: false }))}
-                      className="absolute top-3 right-3 w-6 h-6 rounded-md bg-white/5 flex items-center justify-center text-slate-500 hover:text-white transition-colors"
-                      aria-label="Dismiss"
-                    >
-                      <i className="fa-solid fa-xmark text-xs"></i>
-                    </button>
-                  </div>
-                )}
                 <IncentiveBanner
                   uid={user?.uid}
                   walletAddress={progress.walletAddress}

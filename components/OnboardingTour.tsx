@@ -27,7 +27,7 @@ const TOUR_STEPS: TourStep[] = [
   },
   {
     title: 'Knowledge Atlas — 10 Modules',
-    description: 'Start with Crypto Foundations and work through 10 full modules covering DeFi, security, NFTs, governance and more. Every lesson earns you 3 $PATH tokens.',
+    description: 'Start with Crypto Foundations and work through 10 full modules covering DeFi, security, NFTs, governance and more. Every lesson earns you 20 XP.',
     targetSelector: '[data-tour="nav-academy"]',
     tooltipPosition: 'right',
     icon: 'fa-graduation-cap',
