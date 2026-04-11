@@ -1,6 +1,7 @@
 import {
   doc, getDoc, setDoc, addDoc, collection,
   query, where, getDocs, updateDoc, serverTimestamp,
+  onSnapshot, Unsubscribe,
 } from 'firebase/firestore';
 import { db } from '../firebase';
 
@@ -19,11 +20,27 @@ export function generateReferralCode(identifier: string): string {
 
 const REF_STORAGE_KEY = 'clarix_pending_ref';
 
+/**
+ * Derive the short referral code from a wallet address.
+ * Uses the first 8 characters of the address string (e.g. "0xa1778c").
+ * This is URL-safe, human-readable, and ties back to the referrer's wallet.
+ */
+export function walletToRefCode(walletAddress: string): string {
+  return walletAddress.slice(0, 8).toLowerCase();
+}
+
 /** Call once on app load to capture ?ref= from the URL. */
 export function captureRefParam(): void {
   const params = new URLSearchParams(window.location.search);
   const ref = params.get('ref');
-  if (ref && /^CLX-[0-9A-F]{6}$/i.test(ref)) {
+  if (!ref) return;
+  // Accept short wallet-prefix format: 0x + exactly 6 hex chars (e.g. "0xa1778c")
+  if (/^0x[0-9a-f]{6}$/i.test(ref)) {
+    sessionStorage.setItem(REF_STORAGE_KEY, ref.toLowerCase());
+    return;
+  }
+  // Accept legacy CLX-XXXXXX format (Firebase users)
+  if (/^CLX-[0-9A-F]{6}$/i.test(ref)) {
     sessionStorage.setItem(REF_STORAGE_KEY, ref.toUpperCase());
   }
 }
@@ -139,4 +156,27 @@ export async function getReferralStats(referralCode: string): Promise<ReferralSt
     totalReferrals: snap.size,
     tokensEarned: snap.size * 15,
   };
+}
+
+/**
+ * Real-time referral stats listener. Returns an unsubscribe function.
+ * Queries ALL referral events for this code (rewarded or not) so the
+ * count reflects total conversions in real-time.
+ */
+export function subscribeReferralStats(
+  referralCode: string,
+  callback: (stats: ReferralStats) => void,
+): Unsubscribe {
+  const q = query(
+    collection(db, 'referral_events'),
+    where('referrerCode', '==', referralCode),
+  );
+  return onSnapshot(
+    q,
+    (snap) => {
+      const rewarded = snap.docs.filter(d => d.data().referrerRewarded === true).length;
+      callback({ totalReferrals: snap.size, tokensEarned: rewarded * 15 });
+    },
+    () => callback({ totalReferrals: 0, tokensEarned: 0 }),
+  );
 }

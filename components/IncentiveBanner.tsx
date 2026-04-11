@@ -93,20 +93,29 @@ const IncentiveBanner: React.FC<Props> = ({ uid, walletAddress, completedSubtopi
       className={`relative overflow-hidden rounded-2xl border border-cyan-500/25 bg-gradient-to-br from-[#0A0E1A] via-[#0D1520] to-[#0A0E1A] transition-all duration-300 ${dismissing ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}
       style={{ boxShadow: '0 0 40px rgba(0,212,255,0.07), inset 0 1px 0 rgba(0,212,255,0.1)' }}
     >
-      {/* Ambient glow blob */}
-      <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/[0.06] blur-[80px] rounded-full pointer-events-none" />
-      <div className="absolute bottom-0 left-1/3 w-48 h-48 bg-amber-500/[0.05] blur-[60px] rounded-full pointer-events-none" />
+      {/* Ambient glow blob — clipped by overflow-hidden on parent */}
+      <div className="absolute top-0 right-0 w-48 h-48 md:w-64 md:h-64 bg-cyan-500/[0.06] blur-[60px] md:blur-[80px] rounded-full pointer-events-none" />
+      <div className="absolute bottom-0 left-1/3 w-36 h-36 md:w-48 md:h-48 bg-amber-500/[0.05] blur-[50px] md:blur-[60px] rounded-full pointer-events-none" />
 
-      <div className="relative px-5 py-5 md:px-8 md:py-6 flex flex-col md:flex-row md:items-center gap-5 md:gap-8">
+      {/* Dismiss button — absolute top-right on all sizes */}
+      <button
+        onClick={handleDismiss}
+        className="absolute top-3 right-3 w-7 h-7 rounded-lg bg-white/[0.04] border border-white/[0.07] flex items-center justify-center text-slate-600 hover:text-slate-400 transition-colors z-10"
+        aria-label="Dismiss banner"
+      >
+        <i className="fa-solid fa-xmark text-xs"></i>
+      </button>
+
+      <div className="relative px-4 py-4 md:px-8 md:py-6 pr-12 flex flex-col md:flex-row md:items-center gap-4 md:gap-8">
 
         {/* Icon cluster */}
         <div className="flex-shrink-0 flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-cyan-500/5 border border-cyan-500/20 flex items-center justify-center">
-            <i className="fa-solid fa-bolt text-cyan-400 text-lg"></i>
+          <div className="w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-cyan-500/5 border border-cyan-500/20 flex items-center justify-center">
+            <i className="fa-solid fa-bolt text-cyan-400 text-base md:text-lg"></i>
           </div>
           <div className="md:hidden">
-            <p className="text-[10px] font-black text-cyan-400/70 uppercase tracking-widest mb-0.5">New to Clarix?</p>
-            <p className="text-base font-black text-white leading-tight">Start earning in 10 minutes</p>
+            <p className="text-[9px] font-black text-cyan-400/70 uppercase tracking-widest mb-0.5">New to Clarix?</p>
+            <p className="text-sm font-black text-white leading-tight">Start earning in 10 minutes</p>
           </div>
         </div>
 
@@ -116,18 +125,18 @@ const IncentiveBanner: React.FC<Props> = ({ uid, walletAddress, completedSubtopi
           <h3 className="hidden md:block text-lg font-black text-white leading-tight mb-1">
             Complete Lesson 1 — earn <span className="text-cyan-400">20 XP</span> and <span className="text-amber-400">3 $PATH</span> tokens
           </h3>
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-1 mt-1">
+          <div className="flex flex-wrap items-center gap-x-3 md:gap-x-5 gap-y-1 mt-1">
             <span className="flex items-center gap-1.5 text-xs text-slate-400">
               <i className="fa-solid fa-bolt text-electric-violet text-[10px]"></i>
               <span><span className="font-bold text-white">20 XP</span> per lesson toward your rank</span>
             </span>
             <span className="flex items-center gap-1.5 text-xs text-slate-400">
               <i className="fa-solid fa-coins text-amber-400 text-[10px]"></i>
-              <span><span className="font-bold text-amber-400">3 $PATH</span> tokens — scarce, utility-backed</span>
+              <span><span className="font-bold text-amber-400">3 $PATH</span> tokens</span>
             </span>
             <span className="flex items-center gap-1.5 text-xs text-slate-400">
               <i className="fa-solid fa-certificate text-hyper-gold text-[10px]"></i>
-              <span><span className="font-bold text-white">25 $PATH</span> for each on-chain credential</span>
+              <span><span className="font-bold text-white">25 $PATH</span> per credential</span>
             </span>
             {displayCount && (
               <span className="flex items-center gap-1.5 text-xs text-slate-500">
@@ -138,28 +147,20 @@ const IncentiveBanner: React.FC<Props> = ({ uid, walletAddress, completedSubtopi
           </div>
         </div>
 
-        {/* CTA + dismiss */}
-        <div className="flex items-center gap-3 flex-shrink-0">
+        {/* CTA */}
+        <div className="flex-shrink-0">
           <button
             onClick={onStartLesson}
-            className="relative px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest text-black transition-all hover:scale-105 active:scale-95"
+            className="relative w-full sm:w-auto px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest text-black transition-all hover:scale-105 active:scale-95"
             style={{
               background: 'linear-gradient(135deg, #00D4FF, #00B8E0)',
               boxShadow: '0 0 20px rgba(0,212,255,0.35), 0 0 40px rgba(0,212,255,0.15)',
             }}
           >
-            <span className="relative z-10 flex items-center gap-2">
+            <span className="relative z-10 flex items-center justify-center gap-2">
               <i className="fa-solid fa-rocket text-[10px]"></i>
               Start Earning
             </span>
-          </button>
-
-          <button
-            onClick={handleDismiss}
-            className="w-7 h-7 rounded-lg bg-white/[0.04] border border-white/[0.07] flex items-center justify-center text-slate-600 hover:text-slate-400 transition-colors flex-shrink-0"
-            aria-label="Dismiss banner"
-          >
-            <i className="fa-solid fa-xmark text-xs"></i>
           </button>
         </div>
       </div>

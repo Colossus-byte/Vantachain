@@ -156,6 +156,7 @@ export interface UserProgress {
   referralRewardClaimed?: boolean; // whether the new-user 5-token bonus has been applied
   referralCount?: number;     // how many users this person has referred
   referralTokensEarned?: number;
+  onboardingSkipped?: boolean;
 }
 
 export interface Recommendation {

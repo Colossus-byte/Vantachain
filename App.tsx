@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Sidebar from './components/Sidebar';
 import AIAssistant from './components/AIAssistant';
 import Quiz from './components/Quiz';
@@ -59,6 +59,7 @@ import {
   captureRefParam, getPendingRef, clearPendingRef,
   ensureReferralCode, saveReferredBy,
   triggerReferralRewards, claimReferrerRewards,
+  generateReferralCode, walletToRefCode,
 } from './services/referralService';
 import { trackEvent, setAnalyticsWallet } from './services/analyticsService';
 
@@ -198,11 +199,40 @@ const handleWalletConnected = (wallet: WalletState) => {
   const did = `did:ethr:${wallet.address}`;
   setWalletState(wallet);
   setAnalyticsWallet(wallet.address);
+
+  // Generate a referral code for wallet-only users (Firebase users get one via ensureReferralCode)
+  const referralCode = !user && !progress.referralCode
+    ? generateReferralCode(wallet.address)
+    : progress.referralCode;
+
+  // Check if this user arrived via a referral link
+  const pendingRef = getPendingRef();
+  const isNewReferral = !!pendingRef && !progress.referredBy && !progress.referralRewardClaimed;
+
   setProgress(p => ({
     ...p,
     walletAddress: wallet.address,
     did,
+    ...(referralCode && !p.referralCode ? { referralCode } : {}),
+    ...(isNewReferral ? {
+      referredBy: pendingRef!,
+      tokenBalance: p.tokenBalance + 5,
+      referralRewardClaimed: true,
+    } : {}),
   }));
+
+  if (isNewReferral && pendingRef) {
+    clearPendingRef();
+    addNotification('Welcome Bonus', '+5 $PATH — joined via referral link!', 'success');
+    // pendingRef is the referrer's short code (e.g. "0xa1778c") captured from the URL.
+    // Store it as referrerCode so the referrer's claimReferrerRewards() query matches.
+    triggerReferralRewards(
+      `wallet_${wallet.address.toLowerCase()}`,
+      wallet.address,
+      pendingRef, // already the short wallet code from captureRefParam
+    ).catch(() => {});
+  }
+
   registerWallet(wallet.address, progress.username);
   trackEvent('wallet_connected', { chainName: wallet.chainName });
   addNotification(
@@ -267,9 +297,13 @@ const handleWalletDisconnected = () => {
       }).catch(() => {});
     }
 
-    // Claim any unclaimed referrer rewards (15 tokens per new conversion)
-    if (progress.referralCode) {
-      claimReferrerRewards(progress.referralCode).then(newCount => {
+    // Claim any unclaimed referrer rewards (15 tokens per new conversion).
+    // Use the short wallet code (preferred, matches the link format) or CLX code as fallback.
+    const claimCode = progress.walletAddress
+      ? walletToRefCode(progress.walletAddress)
+      : progress.referralCode;
+    if (claimCode) {
+      claimReferrerRewards(claimCode).then(newCount => {
         if (newCount > 0) {
           const earned = newCount * 15;
           setProgress(p => ({
@@ -280,13 +314,38 @@ const handleWalletDisconnected = () => {
           }));
           addNotification(
             'Referral Reward',
-            `+${earned} $PATH — ${newCount} friend${newCount > 1 ? 's' : ''} completed their first lesson`,
+            `+${earned} $PATH — ${newCount} friend${newCount > 1 ? 's' : ''} joined via your link`,
             'success'
           );
         }
       }).catch(() => {});
     }
   }, [user?.uid]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Claim referrer rewards for wallet-only users (Firebase users handled above)
+  useEffect(() => {
+    if (user) return; // Firebase users have their own effect
+    if (!progress.walletAddress) return;
+    // Use the same short code format as the referral link so the query matches
+    const walletCode = walletToRefCode(progress.walletAddress);
+    claimReferrerRewards(walletCode).then(newCount => {
+      if (newCount > 0) {
+        const earned = newCount * 15;
+        setProgress(p => ({
+          ...p,
+          tokenBalance: p.tokenBalance + earned,
+          referralCount: (p.referralCount ?? 0) + newCount,
+          referralTokensEarned: (p.referralTokensEarned ?? 0) + earned,
+        }));
+        addNotification(
+          'Referral Reward',
+          `+${earned} $PATH — ${newCount} friend${newCount > 1 ? 's' : ''} joined via your link`,
+          'success'
+        );
+      }
+    }).catch(() => {});
+  }, [progress.walletAddress, user]); // eslint-disable-line react-hooks/exhaustive-deps
+
 useEffect(() => {
   // Auto-detect if user already has MetaMask connected
   checkExistingConnection().then(address => {
@@ -320,6 +379,18 @@ useEffect(() => {
   , [progress.currentTopicId]);
 
   const currentSubtopic = currentTopic.subtopics[progress.currentSubtopicIndex];
+
+  // ── Lesson started tracking ───────────────────────────────────────────────
+  const lastTrackedLessonRef = useRef<string>('');
+  useEffect(() => {
+    if (!progress.onboarded) return;
+    const lessonKey = `${progress.currentTopicId}::${progress.currentSubtopicIndex}`;
+    if (lastTrackedLessonRef.current === lessonKey) return;
+    lastTrackedLessonRef.current = lessonKey;
+    if (!progress.completedSubtopics.includes(currentSubtopic?.id ?? '')) {
+      trackEvent('lesson_started', { moduleId: currentTopic.id, lessonId: currentSubtopic.id });
+    }
+  }, [progress.currentTopicId, progress.currentSubtopicIndex, progress.onboarded]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Gamification helpers ──────────────────────────────────────────────────
   const computeStreakUpdates = (base: UserProgress) => {
@@ -511,17 +582,15 @@ useEffect(() => {
 
     writeActivityEvent(currentSubtopic.title, currentTopic.title);
 
-    // Referral reward: fire when user completes their very first lesson
+    // Referral reward: for Firebase users without a wallet, the 5 $PATH bonus
+    // fires here on first lesson. Wallet users already got it at connect time
+    // (referralRewardClaimed is true), so this guard prevents double-crediting.
     const isFirstEverLesson = progress.completedSubtopics.length === 0;
-    if (isFirstEverLesson && progress.referredBy) {
-      // Award new user their 5-token welcome bonus
-      if (!progress.referralRewardClaimed) {
-        setProgress(p => ({ ...p, tokenBalance: p.tokenBalance + 5, referralRewardClaimed: true }));
-        addNotification('Welcome Bonus', '+5 $PATH from your referral', 'success');
-      }
-      // Notify referrer (async, non-blocking)
+    if (isFirstEverLesson && progress.referredBy && !progress.referralRewardClaimed) {
+      setProgress(p => ({ ...p, tokenBalance: p.tokenBalance + 5, referralRewardClaimed: true }));
+      addNotification('Welcome Bonus', '+5 $PATH from your referral', 'success');
       triggerReferralRewards(
-        user?.uid ?? 'anon',
+        user?.uid ?? `wallet_${progress.walletAddress?.toLowerCase() ?? 'anon'}`,
         progress.walletAddress,
         progress.referredBy,
       ).catch(() => {});
@@ -605,12 +674,17 @@ useEffect(() => {
   const finishOnboarding = (username: string, avatarUrl: string, bio: string, role: string, guild: Guild) => {
     trackEvent('onboarding_completed', { guild });
     // Award 1 token for first login
-    setProgress(p => ({ ...p, onboarded: true, username, avatarUrl, bio, guild, tokenBalance: p.tokenBalance + 1 }));
+    setProgress(p => ({ ...p, onboarded: true, onboardingSkipped: false, username, avatarUrl, bio, guild, tokenBalance: p.tokenBalance + 1 }));
     setShowManifesto(true);
     // Show tour after manifesto for first-time users
     if (!localStorage.getItem(TOUR_STORAGE_KEY)) {
       setTimeout(() => setShowTour(true), 800);
     }
+  };
+
+  const handleSkipOnboarding = () => {
+    trackEvent('onboarding_skipped', { reason: 'user_skipped' });
+    setProgress(p => ({ ...p, onboarded: true, onboardingSkipped: true }));
   };
 
   const togglePrivacy = () => {
@@ -642,11 +716,33 @@ useEffect(() => {
     return <SignupPage
       onWalletConnect={(address) => {
         const did = `did:ethr:${address}`;
+        const walletLower = address.toLowerCase();
         registerWallet(address, 'Web3User');
+
+        // Check for pending referral link before navigating away
+        const pendingRef = getPendingRef();
+        const isNewReferral = !!pendingRef && !progress.referredBy && !progress.referralRewardClaimed;
+        if (isNewReferral && pendingRef) {
+          clearPendingRef();
+          // pendingRef is the referrer's short wallet code from the URL
+          triggerReferralRewards(`wallet_${walletLower}`, address, pendingRef).catch(() => {});
+        }
+
+        const refCode = generateReferralCode(address);
+
         try {
           const saved = localStorage.getItem(`clarix_v1_state_${did}`);
           if (saved) {
-            setProgress(JSON.parse(saved));
+            const parsed = JSON.parse(saved);
+            setProgress({
+              ...parsed,
+              referralCode: parsed.referralCode || refCode,
+              ...(isNewReferral && !parsed.referralRewardClaimed ? {
+                referredBy: pendingRef!,
+                tokenBalance: (parsed.tokenBalance ?? 0) + 5,
+                referralRewardClaimed: true,
+              } : {}),
+            });
           } else {
             setProgress(p => ({
               ...p,
@@ -654,18 +750,29 @@ useEffect(() => {
               isPro: false,
               walletAddress: address,
               did,
-              username: 'Web3User'
+              username: 'Web3User',
+              referralCode: refCode,
+              ...(isNewReferral ? {
+                referredBy: pendingRef!,
+                tokenBalance: p.tokenBalance + 5,
+                referralRewardClaimed: true,
+              } : {}),
             }));
           }
         } catch {
-          // corrupted localStorage — init fresh wallet session
           setProgress(p => ({
             ...p,
             onboarded: true,
             isPro: false,
             walletAddress: address,
             did,
-            username: 'Web3User'
+            username: 'Web3User',
+            referralCode: refCode,
+            ...(isNewReferral ? {
+              referredBy: pendingRef!,
+              tokenBalance: p.tokenBalance + 5,
+              referralRewardClaimed: true,
+            } : {}),
           }));
         }
         window.history.pushState({}, '', '/dashboard');
@@ -682,7 +789,7 @@ useEffect(() => {
     );
   }
 
-  if (!progress.onboarded) return <Onboarding onComplete={finishOnboarding} />;
+  if (!progress.onboarded) return <Onboarding onComplete={finishOnboarding} onSkip={handleSkipOnboarding} />;
 
   const t = UI_TRANSLATIONS[progress.language] || UI_TRANSLATIONS[Language.EN];
 
@@ -824,6 +931,28 @@ useEffect(() => {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 md:gap-16">
               <div className="lg:col-span-12 space-y-12">
                 <WalletSummaryCard address={progress.walletAddress} onConnect={connectWallet} />
+                {progress.onboardingSkipped && (
+                  <div className="relative flex flex-col sm:flex-row sm:items-center gap-4 p-4 pr-10 rounded-2xl bg-amber-500/10 border border-amber-500/20">
+                    <i className="fa-solid fa-circle-exclamation text-amber-400 text-lg shrink-0 hidden sm:block"></i>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-white">Complete your profile to earn 100 XP</p>
+                      <p className="text-xs text-slate-400 mt-0.5">Finish setup to unlock the Knowledge Atlas and your first XP bonus.</p>
+                    </div>
+                    <button
+                      onClick={() => setProgress(p => ({ ...p, onboarded: false, onboardingSkipped: false }))}
+                      className="px-4 py-2 rounded-xl bg-amber-500 text-black font-black text-xs uppercase tracking-widest hover:opacity-90 transition-all shrink-0 self-start sm:self-auto"
+                    >
+                      Complete Profile
+                    </button>
+                    <button
+                      onClick={() => setProgress(p => ({ ...p, onboardingSkipped: false }))}
+                      className="absolute top-3 right-3 w-6 h-6 rounded-md bg-white/5 flex items-center justify-center text-slate-500 hover:text-white transition-colors"
+                      aria-label="Dismiss"
+                    >
+                      <i className="fa-solid fa-xmark text-xs"></i>
+                    </button>
+                  </div>
+                )}
                 <IncentiveBanner
                   uid={user?.uid}
                   walletAddress={progress.walletAddress}

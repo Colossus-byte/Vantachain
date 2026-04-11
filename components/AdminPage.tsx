@@ -38,6 +38,8 @@ interface UserDoc {
   completedLessons?: number;
   credentialCount?: number;
   createdAt?: number;
+  guild?: string;
+  onboardingComplete?: boolean;
 }
 
 interface ModuleRow {
@@ -181,10 +183,16 @@ const AdminPage: React.FC = () => {
       const weekAgo = Timestamp.fromMillis(Date.now() - 7 * 86_400_000);
       const oneDayAgo = Timestamp.fromMillis(Date.now() - 86_400_000);
 
-      const [newSnap, activeTodaySnap] = await Promise.all([
+      const [newSnap, todayEventsSnap] = await Promise.all([
         getCountFromServer(query(collection(db, 'wallet_registrations'), where('connectedAt', '>=', weekAgo))),
-        getCountFromServer(query(collection(db, 'events'), where('timestamp', '>=', oneDayAgo))),
+        getDocs(query(collection(db, 'events'), where('timestamp', '>=', oneDayAgo), limit(500))),
       ]);
+      // Count only unique wallet addresses that had activity today (exclude anonymous)
+      const activeToday = new Set(
+        todayEventsSnap.docs
+          .map(d => d.data().walletAddress as string)
+          .filter(w => w && w !== 'anonymous')
+      ).size;
 
       // Leaderboard
       const [lbTop10Snap, allLbSnap] = await Promise.all([
@@ -209,13 +217,14 @@ const AdminPage: React.FC = () => {
         getCountFromServer(query(collection(db, 'events'), where('eventName', '==', 'onboarding_started'))),
         getCountFromServer(query(collection(db, 'events'), where('eventName', '==', 'onboarding_completed'))),
       ]);
-      const onboardingRate = obStartSnap.data().count > 0
-        ? Math.round((obDoneSnap.data().count / obStartSnap.data().count) * 100)
+      // Onboarding rate: wallets that completed onboarding / total wallet connections
+      const onboardingRate = regSnap.data().count > 0
+        ? Math.round((obDoneSnap.data().count / regSnap.data().count) * 100)
         : 0;
 
       setOverview({
         totalWallets: regSnap.data().count,
-        activeToday: activeTodaySnap.data().count,
+        activeToday,
         totalLessons,
         totalCredentials: credSnap.data().count,
         onboardingRate,
@@ -277,15 +286,41 @@ const AdminPage: React.FC = () => {
       });
       setModules(moduleRows);
 
-      // ── User list from leaderboard ────────────────────────────────────────
-      setUsers(allLbSnap.docs.map(d => ({
+      // ── User list: merge leaderboard + wallet_registrations ──────────────
+      // Build wallet→leaderboard map to detect wallet-only users
+      const lbByWallet = new Map<string, string>(); // walletAddr → uid
+      allLbSnap.docs.forEach(d => {
+        const addr = ((d.data().walletAddress as string) ?? '').toLowerCase();
+        if (addr) lbByWallet.set(addr, d.id);
+      });
+
+      const mergedUsers: UserDoc[] = allLbSnap.docs.map(d => ({
         uid: d.id,
         username: d.data().username ?? 'Unknown',
         walletAddress: d.data().walletAddress,
         tokenBalance: d.data().tokenBalance,
         completedLessons: d.data().completedLessons ?? 0,
         createdAt: d.data().updatedAt?.toMillis?.() ?? 0,
-      })));
+        guild: d.data().guild,
+        onboardingComplete: true,
+      }));
+
+      // Add wallet-only registrations with no leaderboard entry
+      for (const wDoc of recentSnap.docs) {
+        const addr = ((wDoc.data().address as string) ?? wDoc.id).toLowerCase();
+        if (!lbByWallet.has(addr)) {
+          mergedUsers.push({
+            uid: addr,
+            username: 'Anonymous',
+            walletAddress: addr,
+            completedLessons: 0,
+            createdAt: wDoc.data().connectedAt?.toMillis?.() ?? 0,
+            onboardingComplete: false,
+          });
+        }
+      }
+
+      setUsers(mergedUsers);
 
       setLastRefresh(Date.now());
     } catch (e: any) {
@@ -350,7 +385,7 @@ const AdminPage: React.FC = () => {
   ] as const;
 
   return (
-    <div className="min-h-screen bg-void text-slate-200 p-4 md:p-8">
+    <div className="h-screen overflow-y-auto bg-void text-slate-200 p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
 
         {/* Header */}
@@ -413,7 +448,7 @@ const AdminPage: React.FC = () => {
         {activeTab === 'overview' && overview && (
           <>
             {/* Stat cards */}
-            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-6 gap-3 mb-8">
               {[
                 { label: 'Total Wallets', value: overview.totalWallets.toLocaleString(), icon: 'fa-wallet', color: 'text-cyan-400' },
                 { label: 'Active Today', value: overview.activeToday.toLocaleString(), icon: 'fa-fire', color: 'text-orange-400' },
@@ -582,10 +617,10 @@ const AdminPage: React.FC = () => {
               <span className="text-[10px] text-slate-600">{users.length} total</span>
             </div>
             <div className="rounded-2xl bg-surface border border-white/5 overflow-x-auto">
-              <table className="w-full text-left min-w-[560px]">
+              <table className="w-full text-left min-w-[640px]">
                 <thead>
                   <tr className="border-b border-white/5 bg-white/[0.02]">
-                    {['Username', 'Lessons', 'XP', 'Guild', 'Last Seen'].map(h => (
+                    {['Username', 'Wallet', 'Lessons', 'Status', 'Last Seen'].map(h => (
                       <th key={h} className="px-4 py-3 text-[9px] font-black text-slate-500 uppercase tracking-widest">{h}</th>
                     ))}
                   </tr>
@@ -597,11 +632,21 @@ const AdminPage: React.FC = () => {
                     <tr key={u.uid} className="hover:bg-white/[0.02] transition-colors">
                       <td className="px-4 py-3">
                         <p className="text-sm font-bold text-white">{u.username}</p>
-                        <p className="font-mono text-[9px] text-slate-600">{u.uid.slice(0, 12)}…</p>
+                        <p className="font-mono text-[9px] text-slate-600">{u.guild ?? '—'}</p>
                       </td>
+                      <td className="px-4 py-3 font-mono text-xs text-slate-400">{u.walletAddress ? truncateWallet(u.walletAddress) : '—'}</td>
                       <td className="px-4 py-3 text-sm text-cyan-400 font-bold">{(u.completedLessons ?? 0).toLocaleString()}</td>
-                      <td className="px-4 py-3 text-sm text-slate-300">{((u.completedLessons ?? 0) * 20).toLocaleString()}</td>
-                      <td className="px-4 py-3 text-xs text-slate-500 uppercase tracking-wider">{(u as any).guild ?? '—'}</td>
+                      <td className="px-4 py-3">
+                        {u.onboardingComplete === false ? (
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-amber-500/15 text-amber-400 border border-amber-500/20">
+                            Onboarding Incomplete
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
+                            Active
+                          </span>
+                        )}
+                      </td>
                       <td className="px-4 py-3 text-xs text-slate-600">{u.createdAt ? timeAgo(u.createdAt) : '—'}</td>
                     </tr>
                   ))}

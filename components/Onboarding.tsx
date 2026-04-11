@@ -5,9 +5,10 @@ import { DEFAULT_AVATARS } from '../constants';
 
 interface OnboardingProps {
   onComplete: (username: string, avatarUrl: string, bio: string, role: string, guild: Guild) => void;
+  onSkip?: () => void;
 }
 
-const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
+const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onSkip }) => {
   const [step, setStep] = useState(0);
   const [terminalText, setTerminalText] = useState("");
   const [role, setRole] = useState('');
@@ -66,18 +67,28 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
       
       <div className="max-w-4xl w-full relative z-10 py-8">
         <div className="flex justify-between items-center mb-8 md:mb-16">
-          <div className="flex gap-1.5 md:gap-2">
-            {[1, 2, 3, 4].map(s => (
-              <div key={s} className={`h-1 w-8 md:w-12 rounded-full transition-all duration-500 ${step >= s ? 'bg-blue-500' : 'bg-white/10'}`}></div>
-            ))}
+          <div className="flex items-center gap-3">
+            <div className="flex gap-1.5 md:gap-2">
+              {[1, 2, 3, 4].map(s => (
+                <div key={s} className={`h-1 w-8 md:w-12 rounded-full transition-all duration-500 ${step >= s ? 'bg-blue-500' : 'bg-white/10'}`}></div>
+              ))}
+            </div>
+            <span className="terminal-text text-[8px] md:text-[10px] uppercase tracking-widest text-slate-500">
+              Step {step} of 4
+            </span>
           </div>
-          <span className="terminal-text text-[8px] md:text-[10px] uppercase tracking-widest text-slate-400">Setup Progress: {step === 1 ? '25%' : step === 2 ? '50%' : step === 3 ? '75%' : '100%'}</span>
+          <div className="flex items-center gap-2">
+            <span className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-[9px] font-bold text-blue-400 uppercase tracking-widest">
+              <i className="fa-solid fa-bolt text-[8px]"></i>+{step === 1 ? '25' : step === 2 ? '50' : step === 3 ? '75' : '100'} XP on finish
+            </span>
+          </div>
         </div>
 
         {step === 1 ? (
           <div className="animate-in fade-in slide-in-from-bottom-8 duration-700">
-            <h2 className="text-3xl md:text-5xl font-bold text-white mb-3 md:mb-4 tracking-tighter">WHAT'S YOUR GOAL?</h2>
-            <p className="text-xs md:text-sm text-slate-400 mb-8 md:mb-12 font-medium">This helps us personalize your dashboard and insights.</p>
+            <h2 className="text-3xl md:text-5xl font-bold text-white mb-2 tracking-tighter">WHAT'S YOUR GOAL?</h2>
+            <p className="text-xs md:text-sm text-slate-400 mb-1 font-medium">This helps us personalize your dashboard and insights.</p>
+            <p className="text-[10px] text-slate-600 mb-8 md:mb-12 italic">Why this matters: tailors your learning path and AI recommendations to what matters most to you.</p>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
               {roles.map((r) => (
@@ -97,20 +108,26 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
               ))}
             </div>
 
-            <div className="mt-12 md:mt-16 flex justify-end">
-              <button 
+            <div className="mt-12 md:mt-16 flex flex-col items-end gap-4">
+              <button
                 disabled={!role}
                 onClick={() => setStep(2)}
                 className="w-full sm:w-auto px-8 md:px-10 py-4 bg-white text-black font-bold uppercase tracking-widest text-[8px] md:text-[10px] rounded-full hover:scale-105 active:scale-95 transition-all disabled:opacity-20"
               >
                 Next Step
               </button>
+              {onSkip && (
+                <button onClick={onSkip} className="text-slate-600 hover:text-slate-400 text-[9px] uppercase tracking-widest transition-colors">
+                  Skip setup
+                </button>
+              )}
             </div>
           </div>
         ) : step === 2 ? (
           <div className="animate-in fade-in slide-in-from-right-8 duration-700">
-             <h2 className="text-3xl md:text-5xl font-bold text-white mb-3 md:mb-4 tracking-tighter">CHOOSE YOUR COMMUNITY</h2>
-             <p className="text-xs md:text-sm text-slate-400 mb-8 md:mb-12 font-medium">Join a community of like-minded people to learn and grow together.</p>
+             <h2 className="text-3xl md:text-5xl font-bold text-white mb-2 tracking-tighter">CHOOSE YOUR COMMUNITY</h2>
+             <p className="text-xs md:text-sm text-slate-400 mb-1 font-medium">Join a community of like-minded people to learn and grow together.</p>
+             <p className="text-[10px] text-slate-600 mb-8 md:mb-12 italic">Why this matters: guilds unlock leaderboards, group challenges, and exclusive rewards.</p>
              
              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
                 {[
@@ -136,19 +153,27 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
 
              <div className="mt-12 md:mt-16 flex flex-col sm:flex-row justify-between items-center gap-6">
                 <button onClick={() => setStep(1)} className="text-slate-500 font-bold uppercase tracking-widest text-[8px] md:text-[10px] hover:text-white transition-colors">Back</button>
-                <button 
-                  disabled={selectedGuild === Guild.NONE}
-                  onClick={() => setStep(3)}
-                  className="w-full sm:w-auto px-10 md:px-12 py-4 md:py-5 bg-blue-500 text-white font-bold uppercase tracking-widest text-[10px] md:text-xs rounded-full hover:shadow-[0_0_30px_rgba(59,130,246,0.4)] hover:scale-105 active:scale-95 transition-all disabled:opacity-20"
-                >
-                  Set Up Profile
-                </button>
+                <div className="flex flex-col items-center gap-3 w-full sm:w-auto">
+                  <button
+                    disabled={selectedGuild === Guild.NONE}
+                    onClick={() => setStep(3)}
+                    className="w-full sm:w-auto px-10 md:px-12 py-4 md:py-5 bg-blue-500 text-white font-bold uppercase tracking-widest text-[10px] md:text-xs rounded-full hover:shadow-[0_0_30px_rgba(59,130,246,0.4)] hover:scale-105 active:scale-95 transition-all disabled:opacity-20"
+                  >
+                    Set Up Profile
+                  </button>
+                  {onSkip && (
+                    <button onClick={onSkip} className="text-slate-600 hover:text-slate-400 text-[9px] uppercase tracking-widest transition-colors">
+                      Skip setup
+                    </button>
+                  )}
+                </div>
              </div>
           </div>
          ) : step === 3 ? (
           <div className="animate-in fade-in slide-in-from-bottom-8 duration-700">
-            <h2 className="text-3xl md:text-5xl font-bold text-white mb-3 md:mb-4 tracking-tighter uppercase italic">Set Up Your Profile</h2>
-            <p className="text-xs md:text-sm text-slate-400 mb-8 md:mb-12 font-medium">Tell us a bit about yourself so we can personalize your experience.</p>
+            <h2 className="text-3xl md:text-5xl font-bold text-white mb-2 tracking-tighter uppercase italic">Set Up Your Profile</h2>
+            <p className="text-xs md:text-sm text-slate-400 mb-1 font-medium">Tell us a bit about yourself so we can personalize your experience.</p>
+            <p className="text-[10px] text-slate-600 mb-8 md:mb-12 italic">Why this matters: your identity earns you recognition and trust across the Clarix network.</p>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 md:gap-12">
               <div className="lg:col-span-4 flex flex-col items-center">
@@ -195,19 +220,27 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
 
              <div className="mt-12 md:mt-16 flex flex-col sm:flex-row justify-between items-center gap-6">
               <button onClick={() => setStep(2)} className="text-slate-500 font-bold uppercase tracking-widest text-[8px] md:text-[10px] hover:text-white transition-colors">Back</button>
-              <button 
-                disabled={!username.trim()}
-                onClick={() => setStep(4)}
-                className="w-full sm:w-auto px-12 md:px-16 py-4 md:py-5 bg-blue-500 text-white font-bold uppercase tracking-widest text-[10px] md:text-xs rounded-full hover:shadow-[0_0_40px_rgba(59,130,246,0.5)] hover:scale-105 active:scale-95 transition-all disabled:opacity-20"
-              >
-                Next Step
-              </button>
+              <div className="flex flex-col items-center gap-3 w-full sm:w-auto">
+                <button
+                  disabled={!username.trim()}
+                  onClick={() => setStep(4)}
+                  className="w-full sm:w-auto px-12 md:px-16 py-4 md:py-5 bg-blue-500 text-white font-bold uppercase tracking-widest text-[10px] md:text-xs rounded-full hover:shadow-[0_0_40px_rgba(59,130,246,0.5)] hover:scale-105 active:scale-95 transition-all disabled:opacity-20"
+                >
+                  Next Step
+                </button>
+                {onSkip && (
+                  <button onClick={onSkip} className="text-slate-600 hover:text-slate-400 text-[9px] uppercase tracking-widest transition-colors">
+                    Skip setup
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         ) : (
           <div className="animate-in fade-in slide-in-from-bottom-8 duration-700">
-            <h2 className="text-3xl md:text-5xl font-bold text-white mb-3 md:mb-4 tracking-tighter uppercase italic">Explore Clarix</h2>
-            <p className="text-xs md:text-sm text-slate-400 mb-8 md:mb-12 font-medium">Here are the core features you'll use to master Web3.</p>
+            <h2 className="text-3xl md:text-5xl font-bold text-white mb-2 tracking-tighter uppercase italic">Explore Clarix</h2>
+            <p className="text-xs md:text-sm text-slate-400 mb-1 font-medium">Here are the core features you'll use to master Web3.</p>
+            <p className="text-[10px] text-slate-600 mb-8 md:mb-12 italic">Why this matters: knowing the platform unlocks every tool from day one.</p>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
               <div className="bg-white/[0.02] border border-white/5 p-6 md:p-8 rounded-2xl md:rounded-3xl hover:border-blue-500/30 transition-all">
@@ -235,9 +268,17 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
               </div>
             </div>
 
-            <div className="mt-12 md:mt-16 flex flex-col sm:flex-row justify-between items-center gap-6">
+            {/* Reward preview */}
+            <div className="mt-8 flex items-center gap-3 p-4 rounded-2xl bg-blue-500/10 border border-blue-500/20">
+              <i className="fa-solid fa-gift text-blue-400 text-lg shrink-0"></i>
+              <p className="text-sm text-blue-200">
+                Complete setup → unlock <span className="font-bold text-white">Knowledge Atlas</span> + earn <span className="font-bold text-cyan-400">100 XP</span>
+              </p>
+            </div>
+
+            <div className="mt-8 md:mt-12 flex flex-col sm:flex-row justify-between items-center gap-6">
               <button onClick={() => setStep(3)} className="text-slate-500 font-bold uppercase tracking-widest text-[8px] md:text-[10px] hover:text-white transition-colors">Back</button>
-              <button 
+              <button
                 onClick={() => onComplete(username, selectedAvatar, bio, role, selectedGuild)}
                 className="w-full sm:w-auto px-12 md:px-16 py-4 md:py-5 bg-white text-black font-bold uppercase tracking-widest text-[10px] md:text-xs rounded-full hover:shadow-[0_0_40px_rgba(255,255,255,0.3)] hover:scale-105 active:scale-95 transition-all"
               >
