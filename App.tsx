@@ -549,7 +549,11 @@ useEffect(() => {
 
   const handleNext = () => {
     if (progress.onboardingSkipped) {
-      addNotification('Complete Setup First', 'Finish your profile to save progress and earn XP.', 'info');
+      if (!progress.walletAddress) {
+        addNotification('Connect Wallet', 'Connect your wallet to save progress and earn XP.', 'info');
+      } else {
+        addNotification('Complete Setup First', 'Finish your profile to save progress and earn XP.', 'info');
+      }
       return;
     }
     const isLastSubtopic = progress.currentSubtopicIndex === currentTopic.subtopics.length - 1;
@@ -799,10 +803,11 @@ useEffect(() => {
   return (
     <div className="flex h-screen w-full overflow-hidden bg-void text-slate-200 relative">
       <WalletConnectModal
-  isOpen={isWalletModalOpen}
-  onClose={() => setIsWalletModalOpen(false)}
-  onConnected={handleWalletConnected}
-/>
+        isOpen={isWalletModalOpen}
+        onClose={() => setIsWalletModalOpen(false)}
+        onConnected={handleWalletConnected}
+        onGuestPreview={handleSkipOnboarding}
+      />
 
       {showManifesto && <Manifesto onClose={() => setShowManifesto(false)} />}
 
@@ -934,15 +939,33 @@ useEffect(() => {
             <div className="relative flex flex-col sm:flex-row sm:items-center gap-4 p-4 pr-10 mb-6 rounded-2xl bg-amber-500/10 border border-amber-500/20">
               <i className="fa-solid fa-circle-exclamation text-amber-400 text-lg shrink-0 hidden sm:block"></i>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-white">You're 2 steps from 50 XP — complete your profile</p>
-                <p className="text-xs text-slate-400 mt-0.5">Finish setup to save progress, earn XP, and unlock your Clarix Credential.</p>
+                {progress.walletAddress ? (
+                  <>
+                    <p className="text-sm font-bold text-white">You're 2 steps from 50 XP — complete your profile</p>
+                    <p className="text-xs text-slate-400 mt-0.5">Finish setup to save progress, earn XP, and unlock your Clarix Credential.</p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-sm font-bold text-white">Connect wallet to save progress and earn XP</p>
+                    <p className="text-xs text-slate-400 mt-0.5">You're previewing in guest mode. Connect a wallet to keep your progress.</p>
+                  </>
+                )}
               </div>
-              <button
-                onClick={() => setProgress(p => ({ ...p, onboarded: false, onboardingSkipped: false }))}
-                className="px-4 py-2 rounded-xl bg-amber-500 text-black font-black text-xs uppercase tracking-widest hover:opacity-90 transition-all shrink-0 self-start sm:self-auto"
-              >
-                Complete Profile
-              </button>
+              {progress.walletAddress ? (
+                <button
+                  onClick={() => setProgress(p => ({ ...p, onboarded: false, onboardingSkipped: false }))}
+                  className="px-4 py-2 rounded-xl bg-amber-500 text-black font-black text-xs uppercase tracking-widest hover:opacity-90 transition-all shrink-0 self-start sm:self-auto"
+                >
+                  Complete Profile
+                </button>
+              ) : (
+                <button
+                  onClick={() => setIsWalletModalOpen(true)}
+                  className="px-4 py-2 rounded-xl bg-amber-500 text-black font-black text-xs uppercase tracking-widest hover:opacity-90 transition-all shrink-0 self-start sm:self-auto"
+                >
+                  Connect Wallet
+                </button>
+              )}
               <button
                 onClick={() => setProgress(p => ({ ...p, onboardingSkipped: false }))}
                 className="absolute top-3 right-3 w-6 h-6 rounded-md bg-white/5 flex items-center justify-center text-slate-500 hover:text-white transition-colors"
@@ -972,7 +995,7 @@ useEffect(() => {
                     isLoading={isGeneratingRecommendation}
                   />
                 )}
-                {!isQuizMode && <ClarixAtlas progress={progress} onSelectTopic={(id) => setProgress(p => ({ ...p, currentTopicId: id, currentSubtopicIndex: 0 }))} />}
+                {!isQuizMode && <ClarixAtlas progress={progress} onSelectTopic={(id) => setProgress(p => ({ ...p, currentTopicId: id, currentSubtopicIndex: 0 }))} isGuest={!!progress.onboardingSkipped} />}
               </div>
               
               <div className="lg:col-span-8">

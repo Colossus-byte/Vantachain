@@ -23,9 +23,10 @@ const LEVEL_ICONS: Record<Difficulty, string> = {
 interface ClarixAtlasProps {
   progress: UserProgress;
   onSelectTopic: (id: string) => void;
+  isGuest?: boolean;
 }
 
-const ClarixAtlas: React.FC<ClarixAtlasProps> = ({ progress, onSelectTopic }) => {
+const ClarixAtlas: React.FC<ClarixAtlasProps> = ({ progress, onSelectTopic, isGuest }) => {
   // Track which topic IDs were previously unlocked so we can animate newly unlocked ones
   const prevUnlockedRef = useRef<Set<string>>(new Set());
   const [newlyUnlocked, setNewlyUnlocked] = useState<Set<string>>(new Set());
@@ -96,7 +97,9 @@ const ClarixAtlas: React.FC<ClarixAtlasProps> = ({ progress, onSelectTopic }) =>
         </svg>
 
         {TOPICS.map((topic, i) => {
-          const isUnlocked = i === 0 || progress.completedTopics.includes(TOPICS[i - 1].id);
+          const isSequentiallyUnlocked = i === 0 || progress.completedTopics.includes(TOPICS[i - 1].id);
+          const isUnlocked = isSequentiallyUnlocked || !!isGuest;
+          const isPreviewOnly = !!isGuest && !isSequentiallyUnlocked;
           const isCompleted = progress.completedTopics.includes(topic.id);
           const isCurrent = progress.currentTopicId === topic.id;
           const isNew = newlyUnlocked.has(topic.id);
@@ -122,11 +125,12 @@ const ClarixAtlas: React.FC<ClarixAtlasProps> = ({ progress, onSelectTopic }) =>
                 disabled={!isUnlocked}
                 onClick={() => onSelectTopic(topic.id)}
                 className={`w-full h-full p-5 md:p-6 rounded-2xl md:rounded-3xl border transition-all duration-500 flex flex-col gap-3 text-left group ${
-                  isCompleted ? 'bg-cyber-lime/8 border-cyber-lime/35' :
-                  isCurrent   ? 'bg-white/8 border-white/25 shadow-xl shadow-white/5' :
-                  isNew       ? 'bg-cyber-lime/5 border-cyber-lime/30' :
-                  isUnlocked  ? 'bg-white/[0.02] border-white/8 hover:border-white/25 hover:bg-white/[0.05]' :
-                                'bg-black/40 border-white/5 opacity-40 grayscale cursor-not-allowed'
+                  isCompleted   ? 'bg-cyber-lime/8 border-cyber-lime/35' :
+                  isCurrent     ? 'bg-white/8 border-white/25 shadow-xl shadow-white/5' :
+                  isNew         ? 'bg-cyber-lime/5 border-cyber-lime/30' :
+                  isPreviewOnly ? 'bg-cyan-500/[0.03] border-cyan-500/15 hover:border-cyan-500/30 hover:bg-cyan-500/[0.06]' :
+                  isUnlocked    ? 'bg-white/[0.02] border-white/8 hover:border-white/25 hover:bg-white/[0.05]' :
+                                  'bg-black/40 border-white/5 opacity-40 grayscale cursor-not-allowed'
                 }`}
               >
                 {/* Icon + level label row */}
@@ -152,6 +156,11 @@ const ClarixAtlas: React.FC<ClarixAtlasProps> = ({ progress, onSelectTopic }) =>
                   {isCompleted && (
                     <span className="text-[8px] font-black text-cyber-lime uppercase tracking-widest">
                       ✓ Done
+                    </span>
+                  )}
+                  {isPreviewOnly && !isCompleted && !isCurrent && (
+                    <span className="text-[8px] font-black text-cyan-400/70 uppercase tracking-widest">
+                      Preview
                     </span>
                   )}
                 </div>
@@ -184,8 +193,8 @@ const ClarixAtlas: React.FC<ClarixAtlasProps> = ({ progress, onSelectTopic }) =>
                   </div>
                 )}
 
-                {/* Locked badge */}
-                {!isUnlocked && (
+                {/* Locked badge — only shown when truly locked (not guest-previewable) */}
+                {!isUnlocked && !isPreviewOnly && (
                   <div className="absolute -top-2 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-rose-500/20 border border-rose-500/30 rounded-full text-[7px] font-black text-rose-400 uppercase tracking-widest whitespace-nowrap">
                     <i className="fa-solid fa-lock mr-1 text-[6px]"></i>Complete previous level first
                   </div>

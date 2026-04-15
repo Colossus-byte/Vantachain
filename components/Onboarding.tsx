@@ -40,7 +40,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onRemindLater }) =>
   const [selectedGuild, setSelectedGuild] = useState<Guild>(Guild.NONE);
 
   return (
-    <div className="fixed inset-0 z-[500] bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[500] bg-black/75 backdrop-blur-sm flex flex-col items-center justify-center p-4 gap-4">
       <div className="max-w-lg w-full bg-[#0D1117] border border-white/[0.08] rounded-2xl overflow-hidden shadow-2xl">
 
         {/* Reward preview */}
@@ -187,6 +187,14 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onRemindLater }) =>
           </div>
         )}
       </div>
+
+      {/* Guest preview entry — below the card */}
+      <button
+        onClick={onRemindLater}
+        className="text-[11px] text-slate-600 hover:text-slate-400 transition-colors"
+      >
+        Not ready? Preview lessons without connecting →
+      </button>
     </div>
   );
 };
